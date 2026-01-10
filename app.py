@@ -665,6 +665,7 @@ def start_streamlit_app(app_name, script_path, port):
             sys.executable, '-m', 'streamlit', 'run',
             script_path,
             '--server.port', str(port),
+            '--server.address', '127.0.0.1',
             '--server.headless', 'true',
             '--browser.gatherUsageStats', 'false',
             # '--logger.level', 'debug',  # 增加日志详细程度
