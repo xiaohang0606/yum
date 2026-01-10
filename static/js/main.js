@@ -2219,9 +2219,11 @@ function refreshConnectionStatus() {
     const statusEl = document.getElementById('connectionStatus');
     if (!statusEl) return;
     if (socketConnected || reportStreamConnected || backendReachable) {
-        statusEl.textContent = '已连接';
+        statusEl.textContent = '✅ 已连接';
+        statusEl.className = 'connected';
     } else {
-        statusEl.textContent = '连接断开';
+        statusEl.textContent = '❌ 连接断开';
+        statusEl.className = 'disconnected';
     }
 }
 

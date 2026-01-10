@@ -9,7 +9,6 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
-    <link rel="stylesheet" href="/static/styles.css">
     <link rel="stylesheet" href="/static/modern-theme.css">
 
     <!-- PDF中文字体数据 (优化后的子集字体，包含6763个GB2312汉字) -->
@@ -20,14 +19,14 @@
     <div class="container">
         <!-- 搜索框区域 -->
         <div class="search-section">
-            <div class="search-title">微舆 - 致力于打造简洁通用的舆情分析平台</div>
+            <h1 class="search-title">微舆 AI 舆情分析平台</h1>
             <div class="search-row">
-                <button class="config-button" id="openConfigButton">LLM 配置</button>
+                <button class="config-button" id="openConfigButton">⚙️ LLM 配置</button>
                 <div class="search-box">
-                    <input type="text" class="search-input" id="searchInput" placeholder="请输入要分析的内容...">
-                    <button class="search-button" id="searchButton">开始</button>
+                    <input type="text" class="search-input" id="searchInput" placeholder="输入分析主题，开启智能舆情洞察...">
+                    <button class="search-button" id="searchButton">🚀 开始分析</button>
                     <button class="upload-button" id="uploadButton">
-                        上传模板
+                        📄 上传模板
                         <input type="file" id="templateFileInput" accept=".md,.txt" title="上传自定义报告模板(支持 .md 和 .txt 文件)">
                     </button>
                 </div>
@@ -39,7 +38,7 @@
         <div class="main-content">
             <!-- 嵌入页面区域 -->
             <div class="embedded-section">
-                <div class="embedded-header" id="embeddedHeader">嵌入的页面</div>
+                <div class="embedded-header" id="embeddedHeader">📊 实时协作视图</div>
                 <div class="embedded-content" id="embeddedContent">
                     <!-- 论坛聊天界面 -->
                     <div class="forum-container" id="forumContainer">
@@ -47,16 +46,16 @@
                             <!-- 动态添加的Engine对话消息将在这里显示 -->
                         </div>
                     </div>
-                    
+
                     <!-- 报告引擎界面 -->
                     <div class="report-container" id="reportContainer">
                         <div class="report-content" id="reportContent">
                             <!-- 报告内容将在这里显示 -->
                         </div>
                     </div>
-                    
-                    <div style="display: flex; align-items: center; justify-content: center; height: 100%; color: #666;">
-                        <span>默认只显示第一个页面 - 点击按钮切换页面</span>
+
+                    <div style="display: flex; align-items: center; justify-content: center; height: 100%; color: var(--text-muted);">
+                        <span>💡 点击右侧引擎按钮查看实时输出</span>
                     </div>
                 </div>
             </div>
@@ -67,23 +66,23 @@
                 <div class="app-switcher">
                     <button class="app-button active" data-app="insight">
                         <span class="status-indicator" id="status-insight"></span>
-                        Insight Engine
+                        💾 Insight
                     </button>
                     <button class="app-button" data-app="media">
                         <span class="status-indicator" id="status-media"></span>
-                        Media Engine
+                        🎬 Media
                     </button>
                     <button class="app-button" data-app="query">
                         <span class="status-indicator" id="status-query"></span>
-                        Query Engine
+                        🔍 Query
                     </button>
                     <button class="app-button" data-app="forum">
                         <span class="status-indicator running" id="status-forum"></span>
-                        Forum Engine
+                        💬 Forum
                     </button>
                     <button class="app-button locked" data-app="report" title="需等待其余三个Agent工作完毕">
                         <span class="status-indicator" id="status-report"></span>
-                        Report Engine
+                        📝 Report
                     </button>
                 </div>
 
@@ -101,17 +100,17 @@
         <!-- 状态栏：实时展示WebSocket连接状态与系统时钟 -->
         <div class="status-bar">
             <div class="status-bar-left">
-                <span id="connectionStatus">连接中...</span>
+                <span id="connectionStatus">🔌 连接中...</span>
                 <span id="systemTime"></span>
             </div>
-            <button class="page-action-button shutdown status-shutdown-button" id="shutdownButton" aria-label="关闭系统">关闭系统</button>
+            <button class="page-action-button shutdown status-shutdown-button" id="shutdownButton" aria-label="关闭系统">🔴 关闭系统</button>
         </div>
     </div>
 
     <div class="confirm-overlay" id="shutdownConfirmModal" aria-hidden="true">
         <div class="confirm-dialog danger">
             <div class="confirm-header">
-                <div class="confirm-title" id="shutdownStrongText">确定要关闭系统吗？</div>
+                <div class="confirm-title" id="shutdownStrongText">⚠️ 确定要关闭系统吗？</div>
                 <button class="confirm-close" id="closeShutdownConfirm" aria-label="关闭系统确认">×</button>
             </div>
             <div class="confirm-body">
@@ -132,9 +131,9 @@
     <div class="config-modal-overlay" id="configModal">
         <div class="config-modal">
             <div class="config-modal-header">
-                <div class="config-modal-title">LLM 配置 - 与.env文件双向同步</div>
+                <div class="config-modal-title">⚙️ LLM 配置 - 与.env文件双向同步</div>
                 <div class="config-modal-actions">
-                    <button class="config-secondary-button" id="refreshConfigButton">刷新</button>
+                    <button class="config-secondary-button" id="refreshConfigButton">🔄 刷新</button>
                     <button class="config-close-button" id="closeConfigModal" aria-label="关闭配置窗口">×</button>
                 </div>
             </div>
@@ -144,8 +143,8 @@
             <div class="config-modal-footer">
                 <div class="config-status-message" id="configStatusMessage"></div>
                 <div class="config-modal-footer-actions">
-                    <button class="config-save-button" id="saveConfigButton">保存</button>
-                    <button class="config-start-button" id="startSystemButton">保存并启动系统</button>
+                    <button class="config-save-button" id="saveConfigButton">💾 保存</button>
+                    <button class="config-start-button" id="startSystemButton">🚀 保存并启动系统</button>
                 </div>
             </div>
         </div>

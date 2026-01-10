@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UI 测试</title>
+    <link rel="stylesheet" href="/static/modern-theme.css">
+</head>
+<body>
+    <div class="container">
+        <div class="search-section">
+            <h1 class="search-title">微舆 AI 舆情分析平台</h1>
+            <div class="search-row">
+                <button class="config-button">⚙️ LLM 配置</button>
+                <div class="search-box">
+                    <input type="text" class="search-input" placeholder="输入分析主题，开启智能舆情洞察...">
+                    <button class="search-button">🚀 开始分析</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="main-content">
+            <div class="embedded-section">
+                <div class="embedded-header">📊 实时协作视图</div>
+                <div class="embedded-content">
+                    <div style="display: flex; align-items: center; justify-content: center; height: 100%; color: var(--text-muted);">
+                        <span>💡 测试界面</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="console-section">
+                <div class="app-switcher">
+                    <button class="app-button active">
+                        <span class="status-indicator running"></span>
+                        💾 Insight
+                    </button>
+                    <button class="app-button">
+                        <span class="status-indicator"></span>
+                        🎬 Media
+                    </button>
+                </div>
+                <div class="console-output">
+                    <div class="console-line">测试日志输出...</div>
+                    <div class="console-line error">错误日志</div>
+                    <div class="console-line success">成功日志</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="status-bar">
+            <div class="status-bar-left">
+                <span class="connected">✅ 已连接</span>
+                <span>12:34:56</span>
+            </div>
+            <button class="status-shutdown-button">🔴 关闭系统</button>
+        </div>
+    </div>
+</body>
+</html>
