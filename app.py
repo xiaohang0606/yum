@@ -65,9 +65,9 @@ def _patch_eventlet_disconnect_logging():
                 environ = getattr(self, 'environ', {}) or {}
                 method = environ.get('REQUEST_METHOD', '')
                 path = environ.get('PATH_INFO', '')
-                logger.warning(f"客户端已主动断开，忽略异常: {method} {path} ({exc})")
+                logger.debug(f"客户端已主动断开，忽略异常: {method} {path} ({exc})")
             except Exception:
-                logger.warning(f"客户端已主动断开，忽略异常: {exc}")
+                logger.debug(f"客户端已主动断开，忽略异常: {exc}")
             return
 
     eventlet.wsgi.HttpProtocol.finish = _safe_finish  # type: ignore[attr-defined]

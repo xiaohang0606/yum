@@ -265,7 +265,7 @@ class PDFRenderer:
                 # 只处理chart.js类型的widget
                 if widget_id and widget_type.startswith('chart.js'):
                     widget_type_lower = widget_type.lower()
-                    props = block.get('props')
+                    props = block.get('props') or {}
                     props_type = str(props.get('type') or '').lower() if isinstance(props, dict) else ''
                     if 'wordcloud' in widget_type_lower or 'wordcloud' in props_type:
                         logger.debug(f"检测到词云 {widget_id}，跳过SVG转换并使用图片注入流程")
@@ -1059,6 +1059,20 @@ body {{
 /* 覆盖英雄区域渐变 */
 .hero-section {{
     background: linear-gradient(135deg, rgba(0,123,255,0.1), rgba(23,162,184,0.1)) !important;
+}}
+
+/* ========== 修复 CSS Grid 兼容性问题 ========== */
+/* WeasyPrint 对 CSS Grid 支持不完善,改用 block 布局 */
+.main-content {{
+    display: block !important;
+    grid-template-columns: none !important;
+}}
+
+/* 禁用所有 Grid 布局 */
+.swot-grid, .pest-grid, .chart-grid, [style*="display: grid"], [style*="display:grid"] {{
+    display: block !important;
+    grid-template-columns: none !important;
+    grid-template-rows: none !important;
 }}
 
 /* ========== 覆盖 hero-actions 按钮样式（无边框样式） ========== */
