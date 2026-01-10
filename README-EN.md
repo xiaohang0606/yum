@@ -32,9 +32,9 @@
 
 ## ⚡ Project Overview
 
-**"BettaFish"** is an innovative multi-agent public opinion analysis system built from scratch. It helps break information cocoons, restore the original public sentiment, predict future trends, and assist decision-making. Users only need to raise analysis needs like chatting; the agents automatically analyze 30+ mainstream social platforms at home and abroad and millions of public comments.
+**"TrustLens (信镜)"** is an innovative multi-agent data analysis system built from scratch, dedicated to penetrating information fog and accurately reflecting the truth of public opinion. Users only need to raise analysis needs conversationally, and the system automatically analyzes 30+ mainstream social media platforms at home and abroad and millions of public comments, ultimately generating high-quality in-depth research reports.
 
-> Betta is a small yet combative and beautiful fish, symbolizing "small but powerful, fearless of challenges".
+> "TrustLens" symbolizes a "Trustworthy Lens", representing the project's commitment to becoming a simple and universal data analysis engine that helps users break information cocoons, restore the original public sentiment, predict future trends, and assist decision-making.
 
 See the system-generated research report on "Wuhan University Public Opinion": [In-depth Analysis Report on Wuhan University's Brand Reputation](./final_reports/final_report__20250827_131630.html)
 

@@ -3117,6 +3117,24 @@ let streamHeartbeatInterval = null;
 let connectionProbeTimer = null;
 const CONNECTION_PROBE_INTERVAL = 15000;
 
+// 持久化缓存管理
+const CACHE_KEY = 'bettafish_report_cache';
+function saveReportCache(taskId, htmlContent) {
+    try {
+        localStorage.setItem(CACHE_KEY, JSON.stringify({ taskId, htmlContent, timestamp: Date.now() }));
+    } catch (e) { console.warn('缓存保存失败:', e); }
+}
+function loadReportCache() {
+    try {
+        const cache = localStorage.getItem(CACHE_KEY);
+        if (cache) {
+            const data = JSON.parse(cache);
+            if (Date.now() - data.timestamp < 24 * 3600 * 1000) return data;
+        }
+    } catch (e) { console.warn('缓存加载失败:', e); }
+    return null;
+}
+
 // 加载报告界面
 function loadReportInterface() {
     const reportContent = document.getElementById('reportContent');
@@ -3144,6 +3162,14 @@ function loadReportInterface() {
             // 【修复】加载Report界面时启动日志刷新
             if (currentApp === 'report') {
                 reportLogManager.start();
+            }
+
+            // 恢复缓存的报告
+            const cache = loadReportCache();
+            if (cache && cache.htmlContent) {
+                console.log('恢复缓存报告:', cache.taskId);
+                reportTaskId = cache.taskId;
+                renderCachedReport(cache.htmlContent);
             }
         } else {
             reportContent.innerHTML = `
@@ -4934,6 +4960,9 @@ function viewReport(taskId) {
                 console.log('使用备用高度设置: 1200px');
             }
         }, 3000);
+
+        // 缓存报告内容
+        saveReportCache(taskId, htmlContent);
     })
     .catch(error => {
         console.error('查看报告失败:', error);
@@ -4943,6 +4972,34 @@ function viewReport(taskId) {
             </div>
         `;
     });
+}
+
+// 渲染缓存的报告
+function renderCachedReport(htmlContent) {
+    const reportPreview = document.getElementById('reportPreview');
+    if (!reportPreview) return;
+
+    const iframe = document.createElement('iframe');
+    iframe.style.width = '100%';
+    iframe.style.border = 'none';
+    iframe.style.minHeight = '800px';
+    iframe.style.overflow = 'hidden';
+    iframe.scrolling = 'no';
+    iframe.id = 'report-iframe';
+
+    reportPreview.innerHTML = '';
+    reportPreview.appendChild(iframe);
+
+    iframe.contentDocument.open();
+    iframe.contentDocument.write(htmlContent);
+    iframe.contentDocument.close();
+
+    iframe.onload = function() {
+        const iframeDoc = iframe.contentDocument;
+        if (iframeDoc?.body) {
+            iframe.style.height = Math.max(iframeDoc.body.scrollHeight, 1200) + 'px';
+        }
+    };
 }
 
 // 检查报告状态（不重新加载整个界面）
