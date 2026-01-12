@@ -581,6 +581,7 @@ class DeepSearchAgent:
             self.state.paragraphs[i].research.mark_completed()
 
             progress = (i + 1) / total_paragraphs * 100
+            self.speak(f"段落《{self.state.paragraphs[i].title}》深度分析已完成 ({progress:.1f}%)")
             logger.info(f"段落处理完成 ({progress:.1f}%)")
 
     def _initial_search_and_summary(self, paragraph_index: int):
@@ -674,13 +675,9 @@ class DeepSearchAgent:
         # 转换为兼容格式
         search_results = []
         if search_response and search_response.results:
-            # 使用配置文件控制传递给LLM的结果数量，0表示不限制
-            if self.config.MAX_SEARCH_RESULTS_FOR_LLM > 0:
-                max_results = min(
-                    len(search_response.results), self.config.MAX_SEARCH_RESULTS_FOR_LLM
-                )
-            else:
-                max_results = len(search_response.results)  # 不限制，传递所有结果
+            # 使用配置文件控制传递给LLM的结果数量，硬性限制最大为 10 条以防止 Payload 过大
+            max_results_limit = self.config.MAX_SEARCH_RESULTS_FOR_LLM if self.config.MAX_SEARCH_RESULTS_FOR_LLM > 0 else 10
+            max_results = min(len(search_response.results), max_results_limit)
             for result in search_response.results[:max_results]:
                 search_results.append(
                     {
@@ -835,14 +832,9 @@ class DeepSearchAgent:
             # 转换为兼容格式
             search_results = []
             if search_response and search_response.results:
-                # 使用配置文件控制传递给LLM的结果数量，0表示不限制
-                if self.config.MAX_SEARCH_RESULTS_FOR_LLM > 0:
-                    max_results = min(
-                        len(search_response.results),
-                        self.config.MAX_SEARCH_RESULTS_FOR_LLM,
-                    )
-                else:
-                    max_results = len(search_response.results)  # 不限制，传递所有结果
+                # 使用配置文件控制传递给LLM的结果数量，硬性限制最大为 10 条以防止 Payload 过大
+                max_results_limit = self.config.MAX_SEARCH_RESULTS_FOR_LLM if self.config.MAX_SEARCH_RESULTS_FOR_LLM > 0 else 10
+                max_results = min(len(search_response.results), max_results_limit)
                 for result in search_response.results[:max_results]:
                     search_results.append(
                         {
@@ -963,6 +955,16 @@ class DeepSearchAgent:
         """保存状态到文件"""
         self.state.save_to_file(filepath)
         logger.info(f"状态已保存到 {filepath}")
+
+    def speak(self, message: str):
+        """
+        向论坛（日志）发送发言，供 ForumEngine 捕获
+        
+        Args:
+            message: 发言内容
+        """
+        # 兼容 ForumEngine 的捕获逻辑，必须包含引擎前缀
+        logger.info(f"[INSIGHT] {message}")
 
 
 def create_agent(config_file: Optional[str] = None) -> DeepSearchAgent:

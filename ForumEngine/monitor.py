@@ -64,6 +64,9 @@ class LogMonitor:
             'nodes.summary_node',  # 模块路径（兼容性，用于部分匹配）
             '正在生成首次段落总结',  # FirstSummaryNode的标识
             '正在生成反思总结',  # ReflectionSummaryNode的标识
+            '[QUERY]',  # 捕获 Query Agent 的状态报告
+            '[INSIGHT]', # 捕获 Insight Agent 的状态报告
+            '[MEDIA]',   # 捕获 Media Agent 的状态报告
         ]
         
         # 多行内容捕获状态
@@ -183,7 +186,6 @@ class LogMonitor:
             "JSON解析成功",
             "成功生成",
             "已更新段落",
-            "正在生成",
             "开始处理",
             "处理完成",
             "已读取HOST发言",

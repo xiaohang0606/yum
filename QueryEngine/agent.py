@@ -212,6 +212,7 @@ class DeepSearchAgent:
             self.state.paragraphs[i].research.mark_completed()
             
             progress = (i + 1) / total_paragraphs * 100
+            self.speak(f"段落《{self.state.paragraphs[i].title}》深度分析已完成 ({progress:.1f}%)")
             logger.info(f"段落处理完成 ({progress:.1f}%)")
     
     def _initial_search_and_summary(self, paragraph_index: int):
@@ -263,8 +264,9 @@ class DeepSearchAgent:
         # 转换为兼容格式
         search_results = []
         if search_response and search_response.results:
-            # 每种搜索工具都有其特定的结果数量，这里取前10个作为上限
-            max_results = min(len(search_response.results), 10)
+            # 强化限制：每种搜索工具的结果上限降至 7 个，防止段落叠加导致 Payload 过大
+            max_results_limit = self.config.MAX_SEARCH_RESULTS_FOR_LLM if self.config.MAX_SEARCH_RESULTS_FOR_LLM > 0 else 7
+            max_results = min(len(search_response.results), max_results_limit)
             for result in search_response.results[:max_results]:
                 search_results.append({
                     'title': result.title,
@@ -309,7 +311,9 @@ class DeepSearchAgent:
         paragraph = self.state.paragraphs[paragraph_index]
         
         for reflection_i in range(self.config.MAX_REFLECTIONS):
-            logger.info(f"  - 反思 {reflection_i + 1}/{self.config.MAX_REFLECTIONS}...")
+            _rel_prog = f"{reflection_i + 1}/{self.config.MAX_REFLECTIONS}"
+            self.speak(f"正在对段落进行第 {_rel_prog} 轮反思研究...")
+            logger.info(f"  - 反思 {_rel_prog}...")
             
             # 准备反思输入
             reflection_input = {
@@ -354,8 +358,9 @@ class DeepSearchAgent:
             # 转换为兼容格式
             search_results = []
             if search_response and search_response.results:
-                # 每种搜索工具都有其特定的结果数量，这里取前10个作为上限
-                max_results = min(len(search_response.results), 10)
+                # 强化限制：反思结果上限也降至 7 个
+                max_results_limit = self.config.MAX_SEARCH_RESULTS_FOR_LLM if self.config.MAX_SEARCH_RESULTS_FOR_LLM > 0 else 7
+                max_results = min(len(search_response.results), max_results_limit)
                 for result in search_response.results[:max_results]:
                     search_results.append({
                         'title': result.title,
@@ -459,6 +464,16 @@ class DeepSearchAgent:
         """保存状态到文件"""
         self.state.save_to_file(filepath)
         logger.info(f"状态已保存到 {filepath}")
+
+    def speak(self, message: str):
+        """
+        向论坛（日志）发送发言，供 ForumEngine 捕获
+        
+        Args:
+            message: 发言内容
+        """
+        # 兼容 ForumEngine 的捕获逻辑，必须包含引擎前缀
+        logger.info(f"[QUERY] {message}")
 
 
 def create_agent() -> DeepSearchAgent:

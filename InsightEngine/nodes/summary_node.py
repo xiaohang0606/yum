@@ -97,7 +97,7 @@ class FirstSummaryNode(StateMutationNode):
                 formatted_host = format_host_speech_for_prompt(data['host_speech'])
                 message = formatted_host + "\n" + message
             
-            logger.info("正在生成首次段落总结")
+            logger.info(f"正在生成首次段落总结: 《{data.get('title', '未知')}》")
             
             # 调用LLM（流式，安全拼接UTF-8）
             response = self.llm_client.stream_invoke_to_string(SYSTEM_PROMPT_FIRST_SUMMARY, message)
@@ -262,7 +262,7 @@ class ReflectionSummaryNode(StateMutationNode):
                 formatted_host = format_host_speech_for_prompt(data['host_speech'])
                 message = formatted_host + "\n" + message
             
-            logger.info("正在生成反思总结")
+            logger.info(f"正在根据反思进行总结: 《{data.get('title', '未知')}》")
             
             # 调用LLM（流式，安全拼接UTF-8）
             response = self.llm_client.stream_invoke_to_string(SYSTEM_PROMPT_REFLECTION_SUMMARY, message)

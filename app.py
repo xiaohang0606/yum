@@ -665,7 +665,7 @@ def start_streamlit_app(app_name, script_path, port):
             sys.executable, '-m', 'streamlit', 'run',
             script_path,
             '--server.port', str(port),
-            '--server.address', '127.0.0.1',
+            '--server.address', '0.0.0.0',
             '--server.headless', 'true',
             '--browser.gatherUsageStats', 'false',
             # '--logger.level', 'debug',  # 增加日志详细程度
@@ -805,11 +805,23 @@ def wait_for_app_startup(app_name, max_wait_time=90):
                 info['status'] = 'running'
                 return True, "启动成功"
         except Exception as exc:
-            logger.warning(f"{app_name} 健康检查失败: {exc}")
+            # 记录健康检查失败，但不立即停止，直到超时
+            pass
 
         time.sleep(1)
 
-    return False, "启动超时"
+    # 启动超时或失败，获取该引擎的最后几行日志以供诊断
+    error_context = ""
+    try:
+        last_logs = read_log_from_file(app_name, tail_lines=15)
+        if last_logs:
+            log_summary = "\n".join(last_logs)
+            error_context = f"\n--- {app_name} 最近日志预览 ---\n{log_summary}\n---------------------------"
+            logger.error(f"{app_name} 启动失败，捕捉到以下运行日志：{error_context}")
+    except Exception as e:
+        logger.error(f"尝试读取 {app_name} 错误日志时发生异常: {e}")
+
+    return False, f"启动超时或失败 {error_context}"
 
 def cleanup_processes():
     """清理所有进程"""

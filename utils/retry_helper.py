@@ -227,7 +227,7 @@ def make_retryable_request(
 # 预定义一些常用的重试配置
 LLM_RETRY_CONFIG = RetryConfig(
     max_retries=6,        # 保持额外重试次数
-    initial_delay=60.0,   # 首次等待至少 1 分钟
+    initial_delay=5.0,    # 首次等待降低到 5 秒
     backoff_factor=2.0,   # 继续使用指数退避
     max_delay=600.0       # 单次等待最长 10 分钟
 )
