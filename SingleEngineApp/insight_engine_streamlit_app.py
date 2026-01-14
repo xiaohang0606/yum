@@ -133,6 +133,18 @@ def main():
     # 如果已有研究结果，重新显示（防止页面刷新后丢失）
     elif st.session_state.get('research_completed') and st.session_state.get('final_report'):
         st.success("研究已完成！")
+        
+        # 添加重置按钮
+        col1, col2 = st.columns([3, 1])
+        with col2:
+            if st.button("🔄 开始新研究", key="reset_btn", type="primary"):
+                keys_to_clear = ['research_completed', 'final_report', 'agent', 
+                                'auto_search_executed', 'history_report_content']
+                for key in keys_to_clear:
+                    if key in st.session_state:
+                        del st.session_state[key]
+                st.rerun()
+        
         st.header("研究结果")
         st.markdown(st.session_state.final_report)
         
