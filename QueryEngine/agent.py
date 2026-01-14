@@ -265,7 +265,7 @@ class DeepSearchAgent:
         search_results = []
         if search_response and search_response.results:
             # 强化限制：每种搜索工具的结果上限降至 7 个，防止段落叠加导致 Payload 过大
-            max_results_limit = self.config.MAX_SEARCH_RESULTS_FOR_LLM if self.config.MAX_SEARCH_RESULTS_FOR_LLM > 0 else 7
+            max_results_limit = getattr(self.config, 'MAX_SEARCH_RESULTS_FOR_LLM', 7) or 7
             max_results = min(len(search_response.results), max_results_limit)
             for result in search_response.results[:max_results]:
                 search_results.append({
@@ -359,7 +359,7 @@ class DeepSearchAgent:
             search_results = []
             if search_response and search_response.results:
                 # 强化限制：反思结果上限也降至 7 个
-                max_results_limit = self.config.MAX_SEARCH_RESULTS_FOR_LLM if self.config.MAX_SEARCH_RESULTS_FOR_LLM > 0 else 7
+                max_results_limit = getattr(self.config, 'MAX_SEARCH_RESULTS_FOR_LLM', 7) or 7
                 max_results = min(len(search_response.results), max_results_limit)
                 for result in search_response.results[:max_results]:
                     search_results.append({

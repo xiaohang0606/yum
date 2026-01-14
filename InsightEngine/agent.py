@@ -676,7 +676,7 @@ class DeepSearchAgent:
         search_results = []
         if search_response and search_response.results:
             # 使用配置文件控制传递给LLM的结果数量，硬性限制最大为 10 条以防止 Payload 过大
-            max_results_limit = self.config.MAX_SEARCH_RESULTS_FOR_LLM if self.config.MAX_SEARCH_RESULTS_FOR_LLM > 0 else 10
+            max_results_limit = getattr(self.config, 'MAX_SEARCH_RESULTS_FOR_LLM', 10) or 10
             max_results = min(len(search_response.results), max_results_limit)
             for result in search_response.results[:max_results]:
                 search_results.append(
@@ -833,7 +833,7 @@ class DeepSearchAgent:
             search_results = []
             if search_response and search_response.results:
                 # 使用配置文件控制传递给LLM的结果数量，硬性限制最大为 10 条以防止 Payload 过大
-                max_results_limit = self.config.MAX_SEARCH_RESULTS_FOR_LLM if self.config.MAX_SEARCH_RESULTS_FOR_LLM > 0 else 10
+                max_results_limit = getattr(self.config, 'MAX_SEARCH_RESULTS_FOR_LLM', 10) or 10
                 max_results = min(len(search_response.results), max_results_limit)
                 for result in search_response.results[:max_results]:
                     search_results.append(
