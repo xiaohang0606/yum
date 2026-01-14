@@ -128,6 +128,22 @@ def main():
 
         # 执行研究
         execute_research(query, config)
+    
+    # 如果已有研究结果，重新显示（防止页面刷新后丢失）
+    elif st.session_state.get('research_completed') and st.session_state.get('final_report'):
+        st.success("研究已完成！")
+        st.header("研究结果")
+        st.markdown(st.session_state.final_report)
+        
+        # 显示 agent 详情（如果存在）
+        if st.session_state.get('agent'):
+            agent = st.session_state.agent
+            with st.expander("查看详细信息"):
+                for i, paragraph in enumerate(agent.state.paragraphs):
+                    st.write(f"**段落 {i + 1}: {paragraph.title}**")
+                    summary = paragraph.research.latest_summary
+                    st.write(summary[:500] + "..." if len(summary) > 500 else summary)
+                    st.divider()
 
 
 def execute_research(query: str, config: Settings):
@@ -177,6 +193,10 @@ def execute_research(query: str, config: Settings):
         progress_bar.progress(100)
 
         status_text.text("研究完成！")
+        
+        # 保存结果到 session state，防止页面刷新后丢失
+        st.session_state.final_report = final_report
+        st.session_state.research_completed = True
 
         # 显示结果
         display_results(agent, final_report)
