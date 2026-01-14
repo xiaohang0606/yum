@@ -30,6 +30,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 from MediaEngine import DeepSearchAgent, AnspireSearchAgent, Settings
 from config import settings
 from utils.github_issues import error_with_issue_link
+import glob
 
 
 def main():
@@ -163,6 +164,51 @@ def main():
                     summary = paragraph.research.latest_summary
                     st.write(summary[:500] + "..." if len(summary) > 500 else summary)
                     st.divider()
+    
+    # 历史报告加载功能
+    load_history_reports("media_engine_streamlit_reports")
+
+
+def load_history_reports(reports_dir: str):
+    """加载并显示历史报告"""
+    st.divider()
+    
+    # 获取报告文件列表
+    report_pattern = os.path.join(reports_dir, "deep_search_report_*.md")
+    report_files = sorted(glob.glob(report_pattern), key=os.path.getmtime, reverse=True)
+    
+    if not report_files:
+        with st.expander("📂 历史报告（暂无）"):
+            st.info("暂无历史报告。完成研究后，报告将自动保存在此。")
+        return
+    
+    with st.expander(f"📂 历史报告（{len(report_files)} 份）"):
+        # 创建选择器
+        report_names = []
+        for f in report_files[:10]:  # 最多显示10份
+            basename = os.path.basename(f)
+            mtime = datetime.fromtimestamp(os.path.getmtime(f))
+            report_names.append(f"{basename} ({mtime.strftime('%m-%d %H:%M')})")
+        
+        selected = st.selectbox(
+            "选择要查看的报告",
+            options=range(len(report_names)),
+            format_func=lambda x: report_names[x],
+            key="history_report_selector"
+        )
+        
+        if st.button("📖 加载报告", key="load_history_btn"):
+            try:
+                with open(report_files[selected], 'r', encoding='utf-8') as f:
+                    content = f.read()
+                st.session_state.history_report_content = content
+            except Exception as e:
+                st.error(f"读取报告失败: {e}")
+        
+        # 显示已加载的历史报告
+        if st.session_state.get('history_report_content'):
+            st.markdown("---")
+            st.markdown(st.session_state.history_report_content)
 
 
 def execute_research(query: str, config: Settings):

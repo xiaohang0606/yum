@@ -1155,6 +1155,116 @@ def get_forum_log_history():
     except Exception as e:
         return jsonify({'success': False, 'message': f'读取forum历史失败: {str(e)}'})
 
+
+# ==================== 历史报告 API ====================
+@app.route('/api/history-reports', methods=['GET'])
+def list_history_reports():
+    """
+    列出所有历史报告。
+    
+    返回:
+    {
+        "success": true,
+        "reports": {
+            "insight": [...],
+            "media": [...],
+            "query": [...],
+            "final": [...]
+        }
+    }
+    """
+    import glob
+    
+    reports = {
+        'insight': [],
+        'media': [],
+        'query': [],
+        'final': []
+    }
+    
+    report_dirs = {
+        'insight': 'insight_engine_streamlit_reports',
+        'media': 'media_engine_streamlit_reports',
+        'query': 'query_engine_streamlit_reports',
+        'final': 'final_reports'
+    }
+    
+    try:
+        for engine, dir_path in report_dirs.items():
+            if engine == 'final':
+                pattern = os.path.join(dir_path, '*.md')
+            else:
+                pattern = os.path.join(dir_path, 'deep_search_report_*.md')
+            
+            files = sorted(glob.glob(pattern), key=os.path.getmtime, reverse=True)
+            
+            for f in files[:20]:  # 最多返回20份
+                try:
+                    mtime = os.path.getmtime(f)
+                    reports[engine].append({
+                        'filename': os.path.basename(f),
+                        'path': f,
+                        'modified': mtime,
+                        'modified_str': datetime.fromtimestamp(mtime).strftime('%Y-%m-%d %H:%M:%S')
+                    })
+                except Exception:
+                    pass
+        
+        return jsonify({'success': True, 'reports': reports})
+    except Exception as e:
+        return jsonify({'success': False, 'message': f'获取历史报告失败: {str(e)}'})
+
+
+@app.route('/api/history-reports/<engine>/<filename>', methods=['GET'])
+def get_history_report(engine, filename):
+    """
+    读取指定的历史报告内容。
+    
+    参数:
+    - engine: insight, media, query, final
+    - filename: 报告文件名
+    
+    返回:
+    {
+        "success": true,
+        "content": "报告内容...",
+        "filename": "xxx.md"
+    }
+    """
+    report_dirs = {
+        'insight': 'insight_engine_streamlit_reports',
+        'media': 'media_engine_streamlit_reports',
+        'query': 'query_engine_streamlit_reports',
+        'final': 'final_reports'
+    }
+    
+    if engine not in report_dirs:
+        return jsonify({'success': False, 'message': f'未知的引擎类型: {engine}'})
+    
+    # 安全检查：防止路径遍历攻击
+    if '..' in filename or '/' in filename or '\\' in filename:
+        return jsonify({'success': False, 'message': '非法的文件名'})
+    
+    file_path = os.path.join(report_dirs[engine], filename)
+    
+    if not os.path.exists(file_path):
+        return jsonify({'success': False, 'message': f'报告不存在: {filename}'})
+    
+    try:
+        with open(file_path, 'r', encoding='utf-8') as f:
+            content = f.read()
+        return jsonify({
+            'success': True,
+            'content': content,
+            'filename': filename,
+            'engine': engine
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'message': f'读取报告失败: {str(e)}'})
+
+
+# ==================== 历史报告 API 结束 ====================
+
 @app.route('/api/search', methods=['POST'])
 def search():
     """统一搜索接口"""
