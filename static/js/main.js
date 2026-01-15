@@ -712,6 +712,12 @@ function initializeEventListeners() {
         shutdownButton.addEventListener('click', () => handleShutdownRequest());
     }
 
+    // 新的开始按钮
+    const freshStartButton = document.getElementById('freshStartButton');
+    if (freshStartButton) {
+        freshStartButton.addEventListener('click', () => handleFreshStart());
+    }
+
     const cancelShutdownButton = document.getElementById('cancelShutdownButton');
     if (cancelShutdownButton) {
         cancelShutdownButton.addEventListener('click', () => hideShutdownConfirm());
@@ -1311,6 +1317,65 @@ async function handleSafeRefresh() {
             refreshButton.disabled = false;
             refreshButton.textContent = originalText || '安全刷新';
         }
+    }
+}
+
+// 新的开始：清空所有日志缓存
+async function handleFreshStart() {
+    const button = document.getElementById('freshStartButton');
+    if (!button) return;
+
+    const originalText = button.textContent;
+    button.disabled = true;
+    button.textContent = '🔄 清空中...';
+
+    try {
+        // 调用后端 API 清空日志文件
+        const response = await fetch('/api/fresh-start', { method: 'POST' });
+        const data = await response.json();
+
+        if (data.success) {
+            // 清空所有前端控制台日志
+            consoleLayerApps.forEach(app => {
+                const renderer = logRenderers[app];
+                if (renderer) {
+                    renderer.clear(`[系统] 新的开始 - ${new Date().toLocaleTimeString()}`);
+                    renderer.render();
+                }
+            });
+
+            // 清空 Forum 聊天记录
+            forumMessagesCache = [];
+            const forumChatArea = document.getElementById('forumChatArea');
+            if (forumChatArea) {
+                forumChatArea.innerHTML = `
+                    <div class="forum-system-message">
+                        🌅 新的开始 - ${new Date().toLocaleTimeString()}
+                    </div>
+                `;
+            }
+
+            // 清空报告预览
+            const reportPreview = document.getElementById('reportPreview');
+            if (reportPreview) {
+                reportPreview.innerHTML = '<div class="report-loading">点击"生成最终报告"开始生成综合分析报告</div>';
+            }
+
+            // 重置相关状态
+            autoGenerateTriggered = false;
+            reportTaskId = null;
+            lastCompletedReportTask = null;
+
+            showMessage(data.message, 'success');
+        } else {
+            showMessage(data.message || '清空失败', 'error');
+        }
+    } catch (error) {
+        console.error('新的开始失败:', error);
+        showMessage(`操作失败: ${error.message}`, 'error');
+    } finally {
+        button.disabled = false;
+        button.textContent = originalText;
     }
 }
 

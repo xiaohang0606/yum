@@ -1071,6 +1071,60 @@ def stop_forum_monitoring_api():
     except Exception as e:
         return jsonify({'success': False, 'message': f'停止论坛失败: {str(e)}'})
 
+
+@app.route('/api/fresh-start', methods=['POST'])
+def fresh_start():
+    """
+    新的开始：清空所有日志缓存，重置报告状态。
+    
+    功能：
+    - 清空所有 Engine 的日志文件
+    - 清空 forum.log
+    - 重置 ReportEngine 状态
+    - 清空前端日志显示（需要前端配合）
+    """
+    try:
+        cleared_files = []
+        
+        # 清空各个引擎的日志文件
+        log_files = ['insight.log', 'media.log', 'query.log', 'forum.log', 'report.log']
+        for log_file in log_files:
+            log_path = LOG_DIR / log_file
+            if log_path.exists():
+                try:
+                    with open(log_path, 'w', encoding='utf-8') as f:
+                        start_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+                        f.write(f"=== 新的开始 - {start_time} ===\n")
+                    cleared_files.append(log_file)
+                except Exception as e:
+                    logger.warning(f"清空日志 {log_file} 失败: {e}")
+        
+        # 重置 ReportEngine 状态
+        try:
+            response = requests.post(
+                'http://127.0.0.1:5009/api/report/reset',
+                timeout=5
+            )
+            if response.status_code == 200:
+                logger.info("ReportEngine 状态已重置")
+        except Exception as e:
+            logger.warning(f"重置 ReportEngine 状态失败: {e}")
+        
+        logger.info(f"新的开始：已清空日志文件 {cleared_files}")
+        
+        return jsonify({
+            'success': True,
+            'message': '新的开始！所有日志已清空',
+            'cleared_files': cleared_files
+        })
+        
+    except Exception as e:
+        logger.exception(f"新的开始失败: {str(e)}")
+        return jsonify({
+            'success': False,
+            'message': f'操作失败: {str(e)}'
+        }), 500
+
 @app.route('/api/forum/log')
 def get_forum_log():
     """获取ForumEngine的forum.log内容"""
