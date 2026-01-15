@@ -1486,36 +1486,14 @@ function performSearch() {
             }
 
             if (iframe) {
-                // 构建搜索URL
-                const searchUrl = `http://${window.location.hostname}:${ports[app]}?query=${encodeURIComponent(query)}&auto_search=true`;
+                // 构建搜索URL，添加时间戳确保每次点击搜索都会刷新
+                const timestamp = Date.now();
+                const searchUrl = `http://${window.location.hostname}:${ports[app]}?query=${encodeURIComponent(query)}&auto_search=true&_t=${timestamp}`;
                 console.log(`向 ${app} 发送搜索请求: ${searchUrl}`);
 
-                // 检查iframe是否已经加载了相同的查询,避免不必要的重新加载
-                const currentSrc = iframe.src || '';
-
-                // 只在查询不同时才更新iframe
-                // 提取当前URL的query参数
-                let needsUpdate = true;
-                try {
-                    const currentUrl = new URL(currentSrc);
-                    const newUrl = new URL(searchUrl);
-                    const currentQuery = currentUrl.searchParams.get('query');
-                    const newQuery = newUrl.searchParams.get('query');
-
-                    // 如果query参数相同,不需要重新加载
-                    if (currentQuery === newQuery) {
-                        needsUpdate = false;
-                        console.log(`${app} iframe已有相同查询,跳过重新加载`);
-                    }
-                } catch (e) {
-                    // URL解析失败,执行更新
-                    needsUpdate = true;
-                }
-
-                if (needsUpdate) {
-                    // 直接更新iframe的src来传递搜索参数
-                    iframe.src = searchUrl;
-                }
+                // 直接更新iframe的src来传递搜索参数
+                // 每次点击搜索按钮都应该重新执行，时间戳确保URL始终不同
+                iframe.src = searchUrl;
             }
         }
     });

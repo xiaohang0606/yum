@@ -84,6 +84,16 @@ def main():
     start_research = False
     query = auto_query
 
+    # 检测查询是否变化，变化时重置 auto_search_executed 标志
+    if 'last_query' not in st.session_state:
+        st.session_state.last_query = ''
+    
+    if auto_query and auto_query != st.session_state.last_query:
+        # 查询变化，重置执行标志以允许新查询执行
+        if 'auto_search_executed' in st.session_state:
+            del st.session_state['auto_search_executed']
+        st.session_state.last_query = auto_query
+
     if auto_search and auto_query and 'auto_search_executed' not in st.session_state:
         st.session_state.auto_search_executed = True
         start_research = True
