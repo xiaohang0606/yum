@@ -1034,6 +1034,48 @@ def cancel_task(task_id: str):
         }), 500
 
 
+@report_bp.route('/reset', methods=['POST'])
+def reset_task():
+    """
+    重置报告引擎状态，清理已完成/失败/取消的任务。
+
+    用于新搜索开始时，确保前端不会显示旧的报告内容。
+    如果有任务正在运行，则返回错误。
+
+    返回:
+        Response: JSON，包含重置结果或错误信息。
+    """
+    global current_task
+
+    try:
+        with task_lock:
+            if current_task and current_task.status == "running":
+                return jsonify({
+                    'success': False,
+                    'error': '有任务正在运行，无法重置'
+                }), 400
+            
+            if current_task and current_task.status in ["completed", "error", "cancelled"]:
+                logger.info(f"重置报告状态，清理任务: {current_task.task_id}")
+                current_task = None
+                return jsonify({
+                    'success': True,
+                    'message': '报告状态已重置'
+                })
+            
+            return jsonify({
+                'success': True,
+                'message': '无需重置，当前没有已完成的任务'
+            })
+
+    except Exception as e:
+        logger.exception(f"重置报告状态失败: {str(e)}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+
 @report_bp.route('/templates', methods=['GET'])
 def get_templates():
     """

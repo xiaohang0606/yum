@@ -546,7 +546,7 @@ const configFieldGroups = [
 // 应用名称映射
 const appNames = {
     insight: 'Insight Engine',
-    media: 'Media Engine', 
+    media: 'Media Engine',
     query: 'Query Engine',
     forum: 'Forum Engine',
     report: 'Report Engine'
@@ -555,14 +555,14 @@ const appNames = {
 // 页面头部显示的完整Agent介绍
 const agentTitles = {
     insight: 'Insight Agent - 私有数据库挖掘',
-    media: 'Media Agent - 多模态内容分析', 
+    media: 'Media Agent - 多模态内容分析',
     query: 'Query Agent - 精准信息搜索',
     forum: 'Forum Engine - 多智能体交流',
     report: 'Report Agent - 最终报告生成'
 };
 
 // 初始化
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
     initializeConsoleLayers();
     syncStatusBarPosition();
     initializeSocket();
@@ -622,18 +622,18 @@ document.addEventListener('DOMContentLoaded', function() {
 function initializeSocket() {
     socket = io();
 
-    socket.on('connect', function() {
+    socket.on('connect', function () {
         socketConnected = true;
         refreshConnectionStatus();
         socket.emit('request_status');
     });
 
-    socket.on('disconnect', function() {
+    socket.on('disconnect', function () {
         socketConnected = false;
         refreshConnectionStatus();
     });
 
-    socket.on('console_output', function(data) {
+    socket.on('console_output', function (data) {
         // 处理控制台输出
         addConsoleOutput(data.line, data.app);
 
@@ -646,11 +646,11 @@ function initializeSocket() {
         }
     });
 
-    socket.on('forum_message', function(data) {
+    socket.on('forum_message', function (data) {
         // addForumMessage(data);
     });
 
-    socket.on('status_update', function(data) {
+    socket.on('status_update', function (data) {
         updateAppStatus(data);
     });
 }
@@ -659,7 +659,7 @@ function initializeSocket() {
 function initializeEventListeners() {
     // 搜索按钮
     document.getElementById('searchButton').addEventListener('click', performSearch);
-    document.getElementById('searchInput').addEventListener('keypress', function(e) {
+    document.getElementById('searchInput').addEventListener('keypress', function (e) {
         if (e.key === 'Enter') {
             performSearch();
         }
@@ -670,7 +670,7 @@ function initializeEventListeners() {
 
     // 应用切换按钮
     document.querySelectorAll('.app-button').forEach(button => {
-        button.addEventListener('click', function() {
+        button.addEventListener('click', function () {
             const app = this.dataset.app;
             switchToApp(app);
         });
@@ -747,7 +747,7 @@ function initializeEventListeners() {
         });
     }
 
-    document.addEventListener('keydown', function(event) {
+    document.addEventListener('keydown', function (event) {
         if (event.key === 'Escape') {
             if (isConfigModalVisible()) {
                 closeConfigModal();
@@ -851,10 +851,10 @@ function refreshConfigFromServer(showFeedback = false, messageOverride = '') {
 
 function escapeHtml(str) {
     return str.replace(/&/g, '&amp;')
-              .replace(/</g, '&lt;')
-              .replace(/>/g, '&gt;')
-              .replace(/"/g, '&quot;')
-              .replace(/'/g, '&#39;');
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
 }
 
 function renderConfigForm(values) {
@@ -970,7 +970,7 @@ function renderConfigForm(values) {
     container.innerHTML = sections;
     // 不再需要每次调用 attachConfigPasswordToggles
     // 事件委托已在页面初始化时设置
-    
+
     // 为所有 select 下拉框绑定事件，监听值变化并动态显示/隐藏条件字段
     attachConfigConditionalLogic();
 }
@@ -1471,6 +1471,16 @@ function performSearch() {
     // 停止可能正在进行的轮询
     stopProgressPolling();
 
+    // 通知后端清理旧的报告任务状态，确保新搜索完成后不会显示旧报告
+    fetch('/api/report/reset', { method: 'POST' })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                console.log('报告状态已重置:', data.message);
+            }
+        })
+        .catch(err => console.warn('重置报告状态失败:', err));
+
     // 向所有运行中的应用发送搜索请求（通过刷新iframe传递参数）
     let totalRunning = 0;
     const ports = { insight: 8501, media: 8502, query: 8503 };
@@ -1662,7 +1672,7 @@ function startMemoryOptimization() {
 
 
 // 存储最后显示的行数，避免重复加载
-        let lastLineCount = {};
+let lastLineCount = {};
 
 
 
@@ -1818,51 +1828,51 @@ function loadConsoleOutput(app) {
     }
 
     fetch(`/api/output/${app}`)
-    .then(response => response.json())
-    .then(data => {
-        if (data.success && data.output.length > 0) {
-            const lastCount = lastLineCount[app] || 0;
-            const newLines = data.output.slice(lastCount);
+        .then(response => response.json())
+        .then(data => {
+            if (data.success && data.output.length > 0) {
+                const lastCount = lastLineCount[app] || 0;
+                const newLines = data.output.slice(lastCount);
 
-            if (newLines.length > 0) {
-                newLines.forEach(line => appendConsoleTextLine(app, line));
-                lastLineCount[app] = data.output.length;
+                if (newLines.length > 0) {
+                    newLines.forEach(line => appendConsoleTextLine(app, line));
+                    lastLineCount[app] = data.output.length;
 
-                // 切换到该引擎时立即吸附到最新，显示最新日志
-                if (currentApp === app) {
+                    // 切换到该引擎时立即吸附到最新，显示最新日志
+                    if (currentApp === app) {
+                        const renderer = logRenderers[app];
+                        if (renderer) {
+                            renderer.needsScroll = true;
+                            requestAnimationFrame(() => renderer.forceScrollToLatest());
+                            setTimeout(() => renderer.forceScrollToLatest(), 60);
+                        }
+                    }
+
+                    // 数据加载完成，更新加载提示为实际日志
                     const renderer = logRenderers[app];
-                    if (renderer) {
-                        renderer.needsScroll = true;
-                        requestAnimationFrame(() => renderer.forceScrollToLatest());
-                        setTimeout(() => renderer.forceScrollToLatest(), 60);
+                    if (renderer && renderer.lines.length > 0) {
+                        // 移除"正在加载"提示（如果存在）
+                        const firstLine = renderer.lines[0];
+                        if (firstLine && firstLine.text.includes('正在加载')) {
+                            renderer.lines.shift(); // 移除第一行
+                            renderer.lastRenderHash = null; // 强制重新渲染
+                            renderer.scheduleRender(true);
+                        }
                     }
                 }
-
-                // 数据加载完成，更新加载提示为实际日志
+            }
+        })
+        .catch(error => {
+            console.error('加载输出失败:', error);
+            // 加载失败时也显示错误提示
+            if (currentApp === app) {
                 const renderer = logRenderers[app];
-                if (renderer && renderer.lines.length > 0) {
-                    // 移除"正在加载"提示（如果存在）
-                    const firstLine = renderer.lines[0];
-                    if (firstLine && firstLine.text.includes('正在加载')) {
-                        renderer.lines.shift(); // 移除第一行
-                        renderer.lastRenderHash = null; // 强制重新渲染
-                        renderer.scheduleRender(true);
-                    }
+                if (renderer) {
+                    renderer.clear(`[错误] 加载${appNames[app] || app}日志失败`);
+                    renderer.render();
                 }
             }
-        }
-    })
-    .catch(error => {
-        console.error('加载输出失败:', error);
-        // 加载失败时也显示错误提示
-        if (currentApp === app) {
-            const renderer = logRenderers[app];
-            if (renderer) {
-                renderer.clear(`[错误] 加载${appNames[app] || app}日志失败`);
-                renderer.render();
-            }
-        }
-    });
+        });
 }
 
 // 预加载所有Engine的历史日志，切换时无需等待
@@ -1887,27 +1897,27 @@ function refreshConsoleOutput() {
         }
         return;
     }
-    
+
     if (appStatus[currentApp] === 'running' || appStatus[currentApp] === 'starting') {
         fetch(`/api/output/${currentApp}`)
-        .then(response => response.json())
-        .then(data => {
-            if (data.success && data.output.length > 0) {
-                // 只添加新的行
-                const lastCount = lastLineCount[currentApp] || 0;
-                const newLines = data.output.slice(lastCount);
-                
-                if (newLines.length > 0) {
-                    newLines.forEach(line => {
-                        appendConsoleTextLine(currentApp, line);
-                    });
-                    lastLineCount[currentApp] = data.output.length;
+            .then(response => response.json())
+            .then(data => {
+                if (data.success && data.output.length > 0) {
+                    // 只添加新的行
+                    const lastCount = lastLineCount[currentApp] || 0;
+                    const newLines = data.output.slice(lastCount);
+
+                    if (newLines.length > 0) {
+                        newLines.forEach(line => {
+                            appendConsoleTextLine(currentApp, line);
+                        });
+                        lastLineCount[currentApp] = data.output.length;
+                    }
                 }
-            }
-        })
-        .catch(error => {
-            console.error('刷新输出失败:', error);
-        });
+            })
+            .catch(error => {
+                console.error('刷新输出失败:', error);
+            });
     }
 }
 
@@ -2138,17 +2148,17 @@ function updateEmbeddedPage(app) {
 // 检查应用状态
 function checkStatus() {
     fetch('/api/status')
-    .then(response => response.json())
-    .then(data => {
-        backendReachable = true;
-        updateAppStatus(data);
-        refreshConnectionStatus();
-    })
-    .catch(error => {
-        console.error('状态检查失败:', error);
-        backendReachable = false;
-        refreshConnectionStatus();
-    });
+        .then(response => response.json())
+        .then(data => {
+            backendReachable = true;
+            updateAppStatus(data);
+            refreshConnectionStatus();
+        })
+        .catch(error => {
+            console.error('状态检查失败:', error);
+            backendReachable = false;
+            refreshConnectionStatus();
+        });
 }
 
 function startConnectionProbe() {
@@ -2161,18 +2171,18 @@ function startConnectionProbe() {
 
 function probeBackendConnection() {
     fetch('/api/report/status?heartbeat=1', { cache: 'no-store' })
-    .then(response => {
-        if (!response.ok) throw new Error('heartbeat failed');
-        return response.json();
-    })
-    .then(() => {
-        backendReachable = true;
-        refreshConnectionStatus();
-    })
-    .catch(() => {
-        backendReachable = false;
-        refreshConnectionStatus();
-    });
+        .then(response => {
+            if (!response.ok) throw new Error('heartbeat failed');
+            return response.json();
+        })
+        .then(() => {
+            backendReachable = true;
+            refreshConnectionStatus();
+        })
+        .catch(() => {
+            backendReachable = false;
+            refreshConnectionStatus();
+        });
 }
 
 // 更新应用状态
@@ -2181,7 +2191,7 @@ function updateAppStatus(data) {
         // 适配实际的API格式：{app: {status: string, port: int, output_lines: int}}
         const status = info.status === 'running' ? 'running' : 'stopped';
         appStatus[app] = status;
-        
+
         const indicator = document.getElementById(`status-${app}`);
         if (indicator) {
             indicator.className = `status-indicator ${status}`;
@@ -2215,12 +2225,12 @@ function updateTime() {
 // 显示消息
 function showMessage(text, type = 'info') {
     const message = document.getElementById('message');
-    
+
     // 清除之前的定时器
     if (message.hideTimer) {
         clearTimeout(message.hideTimer);
     }
-    
+
     message.textContent = text;
     message.className = `message ${type}`;
     message.classList.add('show');
@@ -2239,7 +2249,7 @@ function showMessage(text, type = 'info') {
 function handleTemplateUpload(event) {
     const file = event.target.files[0];
     const statusDiv = document.getElementById('uploadStatus');
-    
+
     if (!file) {
         statusDiv.textContent = '';
         statusDiv.className = 'upload-status';
@@ -2250,8 +2260,8 @@ function handleTemplateUpload(event) {
     // 检查文件类型
     const allowedTypes = ['text/markdown', 'text/plain', '.md', '.txt'];
     const fileName = file.name.toLowerCase();
-    const isValidType = fileName.endsWith('.md') || fileName.endsWith('.txt') || 
-                      allowedTypes.includes(file.type);
+    const isValidType = fileName.endsWith('.md') || fileName.endsWith('.txt') ||
+        allowedTypes.includes(file.type);
 
     if (!isValidType) {
         statusDiv.textContent = '错误: 请选择 .md 或 .txt 文件';
@@ -2276,10 +2286,10 @@ function handleTemplateUpload(event) {
 
     // 读取文件内容
     const reader = new FileReader();
-    reader.onload = function(e) {
+    reader.onload = function (e) {
         try {
             customTemplate = e.target.result;
-            statusDiv.textContent = `成功: 已加载自定义模板 "${file.name}" (${(file.size/1024).toFixed(1)}KB)`;
+            statusDiv.textContent = `成功: 已加载自定义模板 "${file.name}" (${(file.size / 1024).toFixed(1)}KB)`;
             statusDiv.className = 'upload-status success';
             showMessage(`自定义模板已加载: ${file.name}`, 'success');
         } catch (error) {
@@ -2290,7 +2300,7 @@ function handleTemplateUpload(event) {
         }
     };
 
-    reader.onerror = function() {
+    reader.onerror = function () {
         statusDiv.textContent = '错误: 文件读取失败';
         statusDiv.className = 'upload-status error';
         customTemplate = '';
@@ -2408,39 +2418,39 @@ class ReportLogManager {
             headers: { 'Cache-Control': 'no-cache' },
             signal: this.abortController.signal
         })
-        .then(response => {
-            clearTimeout(timeoutId);
+            .then(response => {
+                clearTimeout(timeoutId);
 
-            if (!response.ok) {
-                throw new Error(`HTTP ${response.status}`);
-            }
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
 
-            return response.json();
-        })
-        .then(data => {
-            // 成功后重置连续错误计数
-            this.consecutiveErrors = 0;
-            this.retryCount = 0;
+                return response.json();
+            })
+            .then(data => {
+                // 成功后重置连续错误计数
+                this.consecutiveErrors = 0;
+                this.retryCount = 0;
 
-            if (!data.success) {
-                throw new Error(data.error || '未知错误');
-            }
+                if (!data.success) {
+                    throw new Error(data.error || '未知错误');
+                }
 
-            // 处理日志数据
-            this.processLogs(data.log_lines || []);
-        })
-        .catch(error => {
-            clearTimeout(timeoutId);
-            // 忽略abort错误
-            if (error.name === 'AbortError') {
+                // 处理日志数据
+                this.processLogs(data.log_lines || []);
+            })
+            .catch(error => {
+                clearTimeout(timeoutId);
+                // 忽略abort错误
+                if (error.name === 'AbortError') {
+                    this.isFetching = false;
+                    return;
+                }
+                this.handleError(error);
+            })
+            .finally(() => {
                 this.isFetching = false;
-                return;
-            }
-            this.handleError(error);
-        })
-        .finally(() => {
-            this.isFetching = false;
-        });
+            });
     }
 
     // 处理日志数据
@@ -2564,7 +2574,7 @@ function resetReportLogsForNewTask(taskId, reason = '开始新的报告任务，
 }
 
 // 【调试】测试日志管理器
-window.testReportLogManager = function() {
+window.testReportLogManager = function () {
     console.log('[测试] ===== 开始测试Report日志管理器 =====');
 
     // 检查当前状态
@@ -2592,47 +2602,47 @@ window.testReportLogManager = function() {
 };
 
 // 【调试】直接测试API
-window.testReportAPI = function() {
+window.testReportAPI = function () {
     console.log('[测试API] ===== 开始测试Report API =====');
 
     fetch('/api/report/log', {
         method: 'GET',
         headers: { 'Cache-Control': 'no-cache' }
     })
-    .then(response => {
-        console.log('[测试API] 响应状态:', response.status);
-        return response.json();
-    })
-    .then(data => {
-        console.log('[测试API] 返回数据:', data);
-        if (data.success && data.log_lines) {
-            console.log('[测试API] 日志行数:', data.log_lines.length);
-            console.log('[测试API] 前5行日志:');
-            data.log_lines.slice(0, 5).forEach((line, idx) => {
-                console.log(`  ${idx}: ${line}`);
-            });
+        .then(response => {
+            console.log('[测试API] 响应状态:', response.status);
+            return response.json();
+        })
+        .then(data => {
+            console.log('[测试API] 返回数据:', data);
+            if (data.success && data.log_lines) {
+                console.log('[测试API] 日志行数:', data.log_lines.length);
+                console.log('[测试API] 前5行日志:');
+                data.log_lines.slice(0, 5).forEach((line, idx) => {
+                    console.log(`  ${idx}: ${line}`);
+                });
 
-            // 查找WARNING和ERROR日志
-            const warnings = data.log_lines.filter(line => line.includes('WARNING'));
-            const errors = data.log_lines.filter(line => line.includes('ERROR'));
+                // 查找WARNING和ERROR日志
+                const warnings = data.log_lines.filter(line => line.includes('WARNING'));
+                const errors = data.log_lines.filter(line => line.includes('ERROR'));
 
-            console.log(`[测试API] 找到 ${warnings.length} 条WARNING日志`);
-            console.log(`[测试API] 找到 ${errors.length} 条ERROR日志`);
+                console.log(`[测试API] 找到 ${warnings.length} 条WARNING日志`);
+                console.log(`[测试API] 找到 ${errors.length} 条ERROR日志`);
 
-            if (warnings.length > 0) {
-                console.log('[测试API] WARNING日志示例:');
-                warnings.slice(0, 3).forEach(line => console.log('  ', line));
+                if (warnings.length > 0) {
+                    console.log('[测试API] WARNING日志示例:');
+                    warnings.slice(0, 3).forEach(line => console.log('  ', line));
+                }
+
+                if (errors.length > 0) {
+                    console.log('[测试API] ERROR日志示例:');
+                    errors.slice(0, 3).forEach(line => console.log('  ', line));
+                }
             }
-
-            if (errors.length > 0) {
-                console.log('[测试API] ERROR日志示例:');
-                errors.slice(0, 3).forEach(line => console.log('  ', line));
-            }
-        }
-    })
-    .catch(error => {
-        console.error('[测试API] 错误:', error);
-    });
+        })
+        .catch(error => {
+            console.error('[测试API] 错误:', error);
+        });
 
     console.log('[测试API] ===== 测试完成 =====');
 };
@@ -2703,29 +2713,29 @@ function applyForumMessages(parsedMessages, { reset = false } = {}) {
 // 实时刷新论坛消息（适用于所有页面）
 function refreshForumMessages() {
     fetch('/api/forum/log')
-    .then(response => response.json())
-    .then(data => {
-        if (!data.success) return;
+        .then(response => response.json())
+        .then(data => {
+            if (!data.success) return;
 
-        const logLines = data.log_lines || [];
-        const parsedMessages = data.parsed_messages || [];
+            const logLines = data.log_lines || [];
+            const parsedMessages = data.parsed_messages || [];
 
-        const logShrunk = logLines.length < forumLogLineCount || parsedMessages.length < forumMessagesCache.length;
+            const logShrunk = logLines.length < forumLogLineCount || parsedMessages.length < forumMessagesCache.length;
 
-        if (logLines.length > forumLogLineCount) {
-            const newLines = logLines.slice(forumLogLineCount);
-            newLines.forEach(line => {
-                appendConsoleTextLine('forum', line);
-            });
-        }
+            if (logLines.length > forumLogLineCount) {
+                const newLines = logLines.slice(forumLogLineCount);
+                newLines.forEach(line => {
+                    appendConsoleTextLine('forum', line);
+                });
+            }
 
-        applyForumMessages(parsedMessages, { reset: logShrunk });
+            applyForumMessages(parsedMessages, { reset: logShrunk });
 
-        forumLogLineCount = logLines.length;
-    })
-    .catch(error => {
-        console.error('刷新论坛消息失败:', error);
-    });
+            forumLogLineCount = logLines.length;
+        })
+        .catch(error => {
+            console.error('刷新论坛消息失败:', error);
+        });
 }
 
 // 初始化论坛功能
@@ -2750,98 +2760,98 @@ function loadForumLog() {
             max_lines: 5000  // 获取最近5000行历史
         })
     })
-    .then(response => response.json())
-    .then(data => {
-        // 【FIX Bug #5】检查是否仍然在forum页面
-        if (currentApp !== 'forum') {
-            console.log('忽略forum日志响应（已切换到其他app）');
-            return;
-        }
-
-        if (!data.success) {
-            // 加载失败，显示错误
-            const renderer = logRenderers['forum'];
-            if (renderer) {
-                renderer.clear('[错误] 加载Forum日志失败');
-                renderer.render();
-            }
-            return;
-        }
-
-        const logLines = data.log_lines || [];
-        forumLogPosition = data.position || 0;  // 记录当前位置
-
-        // 清空并重新加载日志
-        if (logLines.length > 0) {
-            clearConsoleLayer('forum', '[系统] Forum Engine 历史日志');
-            logRenderers['forum'].render(); // 立即渲染清空提示
-
-            // 批量添加历史日志，避免卡顿
-            const batchSize = 100;
-            let index = 0;
-
-            function addBatch() {
-                const batch = logLines.slice(index, index + batchSize);
-                batch.forEach(line => appendConsoleTextLine('forum', line));
-                index += batchSize;
-
-                if (index < logLines.length && currentApp === 'forum') {
-                    requestAnimationFrame(addBatch);
-                }
-            }
-
-            addBatch();
-        } else {
-            clearConsoleLayer('forum', '[系统] Forum Engine 暂无日志');
-        }
-
-        // 同时获取解析的消息（用于聊天区域）
-        fetch('/api/forum/log')
         .then(response => response.json())
         .then(data => {
-            if (!data.success) return;
-
-            const parsedMessages = data.parsed_messages || [];
-            applyForumMessages(parsedMessages, { reset: true });
-            forumLogLineCount = data.log_lines ? data.log_lines.length : 0;
-        });
-    })
-    .catch(error => {
-        console.error('加载论坛历史日志失败:', error);
-        // 【优化】显示错误提示
-        if (currentApp === 'forum') {
-            const renderer = logRenderers['forum'];
-            if (renderer) {
-                renderer.clear('[错误] 加载Forum历史日志失败: ' + error.message);
-                renderer.render();
+            // 【FIX Bug #5】检查是否仍然在forum页面
+            if (currentApp !== 'forum') {
+                console.log('忽略forum日志响应（已切换到其他app）');
+                return;
             }
-        }
-    });
+
+            if (!data.success) {
+                // 加载失败，显示错误
+                const renderer = logRenderers['forum'];
+                if (renderer) {
+                    renderer.clear('[错误] 加载Forum日志失败');
+                    renderer.render();
+                }
+                return;
+            }
+
+            const logLines = data.log_lines || [];
+            forumLogPosition = data.position || 0;  // 记录当前位置
+
+            // 清空并重新加载日志
+            if (logLines.length > 0) {
+                clearConsoleLayer('forum', '[系统] Forum Engine 历史日志');
+                logRenderers['forum'].render(); // 立即渲染清空提示
+
+                // 批量添加历史日志，避免卡顿
+                const batchSize = 100;
+                let index = 0;
+
+                function addBatch() {
+                    const batch = logLines.slice(index, index + batchSize);
+                    batch.forEach(line => appendConsoleTextLine('forum', line));
+                    index += batchSize;
+
+                    if (index < logLines.length && currentApp === 'forum') {
+                        requestAnimationFrame(addBatch);
+                    }
+                }
+
+                addBatch();
+            } else {
+                clearConsoleLayer('forum', '[系统] Forum Engine 暂无日志');
+            }
+
+            // 同时获取解析的消息（用于聊天区域）
+            fetch('/api/forum/log')
+                .then(response => response.json())
+                .then(data => {
+                    if (!data.success) return;
+
+                    const parsedMessages = data.parsed_messages || [];
+                    applyForumMessages(parsedMessages, { reset: true });
+                    forumLogLineCount = data.log_lines ? data.log_lines.length : 0;
+                });
+        })
+        .catch(error => {
+            console.error('加载论坛历史日志失败:', error);
+            // 【优化】显示错误提示
+            if (currentApp === 'forum') {
+                const renderer = logRenderers['forum'];
+                if (renderer) {
+                    renderer.clear('[错误] 加载Forum历史日志失败: ' + error.message);
+                    renderer.render();
+                }
+            }
+        });
 }
 
 // 刷新论坛日志
 function refreshForumLog() {
     fetch('/api/forum/log')
-    .then(response => response.json())
-    .then(data => {
-        if (!data.success) return;
+        .then(response => response.json())
+        .then(data => {
+            if (!data.success) return;
 
-        const logLines = data.log_lines || [];
-        const parsedMessages = data.parsed_messages || [];
-        const logShrunk = logLines.length < forumLogLineCount || parsedMessages.length < forumMessagesCache.length;
+            const logLines = data.log_lines || [];
+            const parsedMessages = data.parsed_messages || [];
+            const logShrunk = logLines.length < forumLogLineCount || parsedMessages.length < forumMessagesCache.length;
 
-        if (logLines.length > forumLogLineCount) {
-            const newLines = logLines.slice(forumLogLineCount);
-            newLines.forEach(line => appendConsoleTextLine('forum', line));
-        }
+            if (logLines.length > forumLogLineCount) {
+                const newLines = logLines.slice(forumLogLineCount);
+                newLines.forEach(line => appendConsoleTextLine('forum', line));
+            }
 
-        applyForumMessages(parsedMessages, { reset: logShrunk });
+            applyForumMessages(parsedMessages, { reset: logShrunk });
 
-        forumLogLineCount = logLines.length;
-    })
-    .catch(error => {
-        console.error('刷新论坛日志失败:', error);
-    });
+            forumLogLineCount = logLines.length;
+        })
+        .catch(error => {
+            console.error('刷新论坛日志失败:', error);
+        });
 }
 
 function getForumMessageCount() {
@@ -2856,50 +2866,50 @@ let autoGenerateTriggered = false; // 防止重复触发
 
 function checkReportLockStatus() {
     fetch('/api/report/status')
-    .then(response => response.json())
-    .then(data => {
-        const reportButton = document.querySelector('[data-app="report"]');
-        
-        if (data.success && data.engines_ready) {
-            // 文件准备就绪，解锁按钮
-            reportButton.classList.remove('locked');
-            reportButton.title = 'Report Engine - 智能报告生成\n所有引擎都有新文件，可以生成报告';
-            
-            // 检查是否已经有报告在显示
-            const reportPreview = document.getElementById('reportPreview');
-            const hasReport = reportPreview && reportPreview.querySelector('iframe');
-            
-            // 如果当前在report页面且还没有触发自动生成且没有正在进行的任务且没有已显示的报告，则自动生成报告
-            if (currentApp === 'report' && !autoGenerateTriggered && !reportTaskId && !hasReport) {
-                autoGenerateTriggered = true;
-                console.log('检测到锁消失且无现有报告，自动开始生成报告');
-                setTimeout(() => {
-                    generateReport();
-                }, 1000); // 延迟1秒开始生成
-            }
-        } else {
-            // 文件未准备就绪，锁定按钮
-            reportButton.classList.add('locked');
-            
-            // 构建详细的提示信息
-            let titleInfo = '\n';
-            
-            if (data.missing_files && data.missing_files.length > 0) {
-                titleInfo += '等待新文件:\n' + data.missing_files.join('\n');
+        .then(response => response.json())
+        .then(data => {
+            const reportButton = document.querySelector('[data-app="report"]');
+
+            if (data.success && data.engines_ready) {
+                // 文件准备就绪，解锁按钮
+                reportButton.classList.remove('locked');
+                reportButton.title = 'Report Engine - 智能报告生成\n所有引擎都有新文件，可以生成报告';
+
+                // 检查是否已经有报告在显示
+                const reportPreview = document.getElementById('reportPreview');
+                const hasReport = reportPreview && reportPreview.querySelector('iframe');
+
+                // 如果当前在report页面且还没有触发自动生成且没有正在进行的任务且没有已显示的报告，则自动生成报告
+                if (currentApp === 'report' && !autoGenerateTriggered && !reportTaskId && !hasReport) {
+                    autoGenerateTriggered = true;
+                    console.log('检测到锁消失且无现有报告，自动开始生成报告');
+                    setTimeout(() => {
+                        generateReport();
+                    }, 1000); // 延迟1秒开始生成
+                }
             } else {
-                titleInfo += '等待三个Agent工作完毕';
+                // 文件未准备就绪，锁定按钮
+                reportButton.classList.add('locked');
+
+                // 构建详细的提示信息
+                let titleInfo = '\n';
+
+                if (data.missing_files && data.missing_files.length > 0) {
+                    titleInfo += '等待新文件:\n' + data.missing_files.join('\n');
+                } else {
+                    titleInfo += '等待三个Agent工作完毕';
+                }
+
+                reportButton.title = titleInfo;
             }
-            
-            reportButton.title = titleInfo;
-        }
-    })
-    .catch(error => {
-        console.error('检查Report Engine状态失败:', error);
-        // 出错时默认锁定
-        const reportButton = document.querySelector('[data-app="report"]');
-        reportButton.classList.add('locked');
-        reportButton.title = 'Report Engine状态检查失败';
-    });
+        })
+        .catch(error => {
+            console.error('检查Report Engine状态失败:', error);
+            // 出错时默认锁定
+            const reportButton = document.querySelector('[data-app="report"]');
+            reportButton.classList.add('locked');
+            reportButton.title = 'Report Engine状态检查失败';
+        });
 }
 
 // 【重构】刷新Report日志（使用新的日志管理器）
@@ -2934,28 +2944,28 @@ function parseForumMessage(logLine) {
         // 解析日志行格式: [HH:MM:SS] [SOURCE] content
         const timeMatch = logLine.match(/^\[(\d{2}:\d{2}:\d{2})\]/);
         if (!timeMatch) return null;
-        
+
         const timestamp = timeMatch[1];
         const restContent = logLine.substring(timeMatch[0].length).trim();
-        
+
         // 解析源标签
         const sourceMatch = restContent.match(/^\[([^\]]+)\]\s*(.*)$/);
         if (!sourceMatch) return null;
-        
+
         const source = sourceMatch[1];
         const content = sourceMatch[2];
-        
+
         // 处理四种消息类型：三个Engine和HOST，过滤掉系统消息和空内容
-        if (!['QUERY', 'INSIGHT', 'MEDIA', 'HOST'].includes(source.toUpperCase()) || 
+        if (!['QUERY', 'INSIGHT', 'MEDIA', 'HOST'].includes(source.toUpperCase()) ||
             !content || content.includes('=== ForumEngine')) {
             return null;
         }
-        
+
         // 根据源类型确定消息类型
         let messageType = 'agent';
         let displayName = '';
-        
-        switch(source.toUpperCase()) {
+
+        switch (source.toUpperCase()) {
             case 'INSIGHT':
                 displayName = 'Insight Engine';
                 break;
@@ -2970,10 +2980,10 @@ function parseForumMessage(logLine) {
                 displayName = 'Forum Host';
                 break;
         }
-        
+
         // 处理内容中的转义字符
         const displayContent = content.replace(/\\n/g, '\n').replace(/\\r/g, '');
-        
+
         // 返回解析后的消息对象
         return {
             type: messageType,
@@ -2981,7 +2991,7 @@ function parseForumMessage(logLine) {
             content: displayContent,
             timestamp: timestamp
         };
-        
+
     } catch (error) {
         console.error('解析论坛消息失败:', error);
         return null;
@@ -2994,15 +3004,15 @@ function addForumMessage(data, options = {}) {
     const chatArea = document.getElementById('forumChatArea');
     if (!chatArea) return;
     const messageDiv = document.createElement('div');
-    
+
     const messageType = data.type || 'system';
     messageDiv.className = `forum-message ${messageType}`;
-    
+
     // 根据来源添加特定的CSS类用于颜色区分
     if (data.source) {
         const sourceClass = data.source.toLowerCase().replace(/\s+/g, '-');
         messageDiv.classList.add(sourceClass);
-        
+
         // 添加具体的engine类
         if (data.source.toLowerCase().includes('query')) {
             messageDiv.classList.add('query-engine');
@@ -3014,22 +3024,22 @@ function addForumMessage(data, options = {}) {
             messageDiv.classList.add('host');
         }
     }
-    
+
     // 构建消息头部，显示来源名称
     const headerText = data.sender || data.source || getMessageHeader(messageType);
-    
+
     messageDiv.innerHTML = `
         <div class="forum-message-header">${headerText}</div>
         <div class="forum-message-content">${formatMessageContent(data.content)}</div>
         <div class="forum-timestamp">${data.timestamp || new Date().toLocaleTimeString('zh-CN')}</div>
     `;
-    
+
     if (prepend && chatArea.firstChild) {
         chatArea.insertBefore(messageDiv, chatArea.firstChild);
     } else {
         chatArea.appendChild(messageDiv);
     }
-    
+
     // 自动滚动到底部（除非用户正在浏览历史）
     if (!suppressScroll && forumAutoScrollEnabled) {
         scrollForumViewToBottom();
@@ -3066,14 +3076,14 @@ function scrollReportViewToBottom() {
 // 格式化消息内容
 function formatMessageContent(content) {
     if (!content) return '';
-    
+
     // 将换行符转换为HTML换行
     return content.replace(/\n/g, '<br>');
 }
 
 // 获取消息头部
 function getMessageHeader(type) {
-    switch(type) {
+    switch (type) {
         case 'user': return '用户';
         case 'agent': return 'AI助手';
         case 'system': return '系统';
@@ -3116,61 +3126,61 @@ function loadReportCache() {
 // 加载报告界面
 function loadReportInterface() {
     const reportContent = document.getElementById('reportContent');
-    
+
     // 检查ReportEngine状态
     fetch('/api/report/status')
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            // 更新ReportEngine状态指示器
-            const indicator = document.getElementById('status-report');
-            if (indicator) {
-                if (data.initialized) {
-                    indicator.className = 'status-indicator running';
-                    appStatus.report = 'running';
-                } else {
-                    indicator.className = 'status-indicator';
-                    appStatus.report = 'stopped';
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // 更新ReportEngine状态指示器
+                const indicator = document.getElementById('status-report');
+                if (indicator) {
+                    if (data.initialized) {
+                        indicator.className = 'status-indicator running';
+                        appStatus.report = 'running';
+                    } else {
+                        indicator.className = 'status-indicator';
+                        appStatus.report = 'stopped';
+                    }
                 }
-            }
 
-            // 渲染报告界面
-            renderReportInterface(data);
+                // 渲染报告界面
+                renderReportInterface(data);
 
-            // 【修复】加载Report界面时启动日志刷新
-            if (currentApp === 'report') {
-                reportLogManager.start();
-            }
+                // 【修复】加载Report界面时启动日志刷新
+                if (currentApp === 'report') {
+                    reportLogManager.start();
+                }
 
-            // 恢复缓存的报告
-            const cache = loadReportCache();
-            if (cache && cache.htmlContent) {
-                console.log('恢复缓存报告:', cache.taskId);
-                reportTaskId = cache.taskId;
-                renderCachedReport(cache.htmlContent);
-            }
-        } else {
-            reportContent.innerHTML = `
+                // 恢复缓存的报告
+                const cache = loadReportCache();
+                if (cache && cache.htmlContent) {
+                    console.log('恢复缓存报告:', cache.taskId);
+                    reportTaskId = cache.taskId;
+                    renderCachedReport(cache.htmlContent);
+                }
+            } else {
+                reportContent.innerHTML = `
                 <div class="report-status error">
                     <strong>错误:</strong> ${data.error}
                 </div>
             `;
-        }
-    })
-    .catch(error => {
-        console.error('加载报告界面失败:', error);
-        reportContent.innerHTML = `
+            }
+        })
+        .catch(error => {
+            console.error('加载报告界面失败:', error);
+            reportContent.innerHTML = `
             <div class="report-status error">
                 <strong>加载失败:</strong> ${error.message}
             </div>
         `;
-    });
+        });
 }
 
 // 渲染报告界面
 function renderReportInterface(statusData) {
     const reportContent = document.getElementById('reportContent');
-    
+
     let interfaceHTML = `
         <!-- 固定的状态信息块 -->
         <div class="engine-status-info" id="engineStatusBlock">
@@ -3258,16 +3268,16 @@ function renderReportInterface(statusData) {
             </div>
         </div>
     `;
-    
+
     reportContent.innerHTML = interfaceHTML;
     initializeReportControls();
     initializeGraphPanel(statusData);
     resetReportStreamOutput('等待新的Report任务启动...');
     updateReportStreamStatus('idle');
-    
+
     // 立即更新状态信息
     updateEngineStatusDisplay(statusData);
-    
+
     // 如果有当前任务，显示任务状态
     if (statusData.current_task) {
         updateTaskProgressStatus(statusData.current_task);
@@ -3987,40 +3997,40 @@ function downloadReport(taskId = null) {
     }
 
     fetch(`/api/report/download/${targetTaskId}`)
-    .then(response => {
-        if (!response.ok) {
-            const contentType = response.headers.get('Content-Type') || '';
-            if (contentType.includes('application/json')) {
-                return response.json().then(err => {
-                    throw new Error(err.error || '下载失败');
-                });
+        .then(response => {
+            if (!response.ok) {
+                const contentType = response.headers.get('Content-Type') || '';
+                if (contentType.includes('application/json')) {
+                    return response.json().then(err => {
+                        throw new Error(err.error || '下载失败');
+                    });
+                }
+                throw new Error('下载失败');
             }
-            throw new Error('下载失败');
-        }
-        const disposition = response.headers.get('Content-Disposition') || '';
-        return response.blob().then(blob => ({ blob, disposition }));
-    })
-    .then(({ blob, disposition }) => {
-        let filename = preferredFileName;
-        if (!filename) {
-            const match = disposition.match(/filename="?([^";]+)"?/i);
-            filename = match ? match[1] : `final_report_${targetTaskId}.html`;
-        }
+            const disposition = response.headers.get('Content-Disposition') || '';
+            return response.blob().then(blob => ({ blob, disposition }));
+        })
+        .then(({ blob, disposition }) => {
+            let filename = preferredFileName;
+            if (!filename) {
+                const match = disposition.match(/filename="?([^";]+)"?/i);
+                filename = match ? match[1] : `final_report_${targetTaskId}.html`;
+            }
 
-        const url = window.URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = filename || 'final_report.html';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        window.URL.revokeObjectURL(url);
-        showMessage('报告文件已开始下载', 'success');
-    })
-    .catch(error => {
-        console.error('下载报告失败:', error);
-        showMessage('下载报告失败: ' + error.message, 'error');
-    });
+            const url = window.URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = filename || 'final_report.html';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            window.URL.revokeObjectURL(url);
+            showMessage('报告文件已开始下载', 'success');
+        })
+        .catch(error => {
+            console.error('下载报告失败:', error);
+            showMessage('下载报告失败: ' + error.message, 'error');
+        });
 }
 
 async function downloadPdfFromPreview(taskIdFromCaller = null) {
@@ -4130,7 +4140,7 @@ function renderTaskStatus(task) {
         'error': '生成失败',
         'pending': '等待中'
     };
-    
+
     // 状态徽章样式
     const statusBadgeClass = {
         'running': 'task-status-running',
@@ -4141,12 +4151,12 @@ function renderTaskStatus(task) {
 
     const htmlReady = task.status === 'completed' && (task.report_file_ready || task.report_file_path || task.has_result);
     const irReady = task.status === 'completed' && (task.ir_file_ready || task.ir_file_path);
-    
+
     // 为运行状态添加加载指示器
-    const loadingIndicator = task.status !== 'completed' && task.status !== 'error' 
-        ? '<span class="report-loading-spinner"></span>' 
+    const loadingIndicator = task.status !== 'completed' && task.status !== 'error'
+        ? '<span class="report-loading-spinner"></span>'
         : '';
-    
+
     let statusHTML = `
         <div class="task-progress-container">
             <div class="task-progress-header">
@@ -4230,23 +4240,23 @@ function generateReport() {
 
     reportAutoPreviewLoaded = false;
     safeCloseReportStream(true);
-    
+
     // 清空控制台显示
     clearConsoleLayer('report', '[系统] 开始生成报告，日志已重置');
     resetReportStreamOutput('Report Engine 正在调度任务...');
-    
+
     setGenerateButtonState(true);
 
     // 在现有状态信息后添加任务进度状态，而不是替换
     addTaskProgressStatus('正在启动报告生成任务...', 'loading');
-    
+
     // 构建请求数据，包含自定义模板（如果有的话）
     const requestData = { query: query };
     if (customTemplate && customTemplate.trim()) {
         requestData.custom_template = customTemplate;
         console.log('使用自定义模板生成报告');
     }
-    
+
     fetch('/api/report/generate', {
         method: 'POST',
         headers: {
@@ -4254,65 +4264,65 @@ function generateReport() {
         },
         body: JSON.stringify(requestData)
     })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            reportTaskId = data.task_id;
-            showMessage('报告生成已启动', 'success');
-            setGraphPanelAwaiting(reportTaskId);
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                reportTaskId = data.task_id;
+                showMessage('报告生成已启动', 'success');
+                setGraphPanelAwaiting(reportTaskId);
 
-            // 更新任务状态显示
-            updateTaskProgressStatus({
-                task_id: data.task_id,
-                query: query,
-                status: 'running',
-                progress: 5, // 初始进度设为5%，确保进度条可见
-                created_at: new Date().toISOString(),
-                updated_at: new Date().toISOString()
-            });
+                // 更新任务状态显示
+                updateTaskProgressStatus({
+                    task_id: data.task_id,
+                    query: query,
+                    status: 'running',
+                    progress: 5, // 初始进度设为5%，确保进度条可见
+                    created_at: new Date().toISOString(),
+                    updated_at: new Date().toISOString()
+                });
 
-            appendReportStreamLine('任务创建成功，正在建立流式连接...', 'info', { force: true });
+                appendReportStreamLine('任务创建成功，正在建立流式连接...', 'info', { force: true });
 
-            // 【修复】在API成功后重置计数器，此时后端已清空日志文件
-            // 避免在API调用期间旧interval读取旧日志导致的竞态条件
-            reportLogManager.reset();
+                // 【修复】在API成功后重置计数器，此时后端已清空日志文件
+                // 避免在API调用期间旧interval读取旧日志导致的竞态条件
+                reportLogManager.reset();
 
-            // 【优化】启动日志轮询
-            // 确保从任务开始就能读取日志
-            reportLogManager.start();
+                // 【优化】启动日志轮询
+                // 确保从任务开始就能读取日志
+                reportLogManager.start();
 
-            // 【兜底】立即启动进度轮询，SSE连上后会自动停止
-            startProgressPolling(reportTaskId);
+                // 【兜底】立即启动进度轮询，SSE连上后会自动停止
+                startProgressPolling(reportTaskId);
 
-            if (window.EventSource) {
-                openReportStream(reportTaskId);
+                if (window.EventSource) {
+                    openReportStream(reportTaskId);
+                } else {
+                    appendReportStreamLine('浏览器不支持SSE，已切换为轮询模式', 'warn', { badge: 'SSE', force: true });
+                }
             } else {
-                appendReportStreamLine('浏览器不支持SSE，已切换为轮询模式', 'warn', { badge: 'SSE', force: true });
+                updateTaskProgressStatus(null, 'error', '启动失败: ' + data.error);
+                // 重置标志允许重新尝试
+                autoGenerateTriggered = false;
+                stopGraphPanelPolling();
+                reportTaskId = null;
+                setGenerateButtonState(false);
+                appendReportStreamLine('任务启动失败: ' + (data.error || '未知错误'), 'error');
+                updateReportStreamStatus('error');
+                safeCloseReportStream();
             }
-        } else {
-            updateTaskProgressStatus(null, 'error', '启动失败: ' + data.error);
+        })
+        .catch(error => {
+            console.error('生成报告失败:', error);
+            updateTaskProgressStatus(null, 'error', '生成报告失败: ' + error.message);
             // 重置标志允许重新尝试
             autoGenerateTriggered = false;
             stopGraphPanelPolling();
             reportTaskId = null;
             setGenerateButtonState(false);
-            appendReportStreamLine('任务启动失败: ' + (data.error || '未知错误'), 'error');
+            appendReportStreamLine('任务启动阶段异常: ' + error.message, 'error');
             updateReportStreamStatus('error');
             safeCloseReportStream();
-        }
-    })
-    .catch(error => {
-        console.error('生成报告失败:', error);
-        updateTaskProgressStatus(null, 'error', '生成报告失败: ' + error.message);
-        // 重置标志允许重新尝试
-        autoGenerateTriggered = false;
-        stopGraphPanelPolling();
-        reportTaskId = null;
-        setGenerateButtonState(false);
-        appendReportStreamLine('任务启动阶段异常: ' + error.message, 'error');
-        updateReportStreamStatus('error');
-        safeCloseReportStream();
-    });
+        });
 }
 
 // 【修复】启动Report Engine日志实时刷新
@@ -4340,53 +4350,53 @@ function startProgressPolling(taskId) {
 // 检查任务进度
 function checkTaskProgress(taskId) {
     fetch(`/api/report/progress/${taskId}`)
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            updateProgressDisplay(data.task);
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                updateProgressDisplay(data.task);
 
-            // 在检查进度时也刷新日志（使用新的日志管理器）
-            // reportLogManager会自动处理轮询
+                // 在检查进度时也刷新日志（使用新的日志管理器）
+                // reportLogManager会自动处理轮询
 
-            if (data.task.status === 'completed') {
-                stopProgressPolling();
-                showMessage('报告生成完成！', 'success');
-                graphPanelTaskId = data.task.task_id;
-                refreshGraphPanel(data.task.task_id, true);
-                stopGraphPanelPolling();
-                
-                // 自动显示报告
-                viewReport(taskId);
-                reportAutoPreviewLoaded = true;
-                
-                // 重置自动生成标志，允许下次有新内容时自动生成
-                autoGenerateTriggered = false;
-                reportTaskId = null;
-                setGenerateButtonState(false);
-            } else if (data.task.status === 'error') {
-                stopProgressPolling();
-                showMessage('报告生成失败: ' + data.task.error_message, 'error');
-                stopGraphPanelPolling();
-                
-                // 重置自动生成标志，允许重新尝试
-                autoGenerateTriggered = false;
-                reportTaskId = null;
-                setGenerateButtonState(false);
+                if (data.task.status === 'completed') {
+                    stopProgressPolling();
+                    showMessage('报告生成完成！', 'success');
+                    graphPanelTaskId = data.task.task_id;
+                    refreshGraphPanel(data.task.task_id, true);
+                    stopGraphPanelPolling();
+
+                    // 自动显示报告
+                    viewReport(taskId);
+                    reportAutoPreviewLoaded = true;
+
+                    // 重置自动生成标志，允许下次有新内容时自动生成
+                    autoGenerateTriggered = false;
+                    reportTaskId = null;
+                    setGenerateButtonState(false);
+                } else if (data.task.status === 'error') {
+                    stopProgressPolling();
+                    showMessage('报告生成失败: ' + data.task.error_message, 'error');
+                    stopGraphPanelPolling();
+
+                    // 重置自动生成标志，允许重新尝试
+                    autoGenerateTriggered = false;
+                    reportTaskId = null;
+                    setGenerateButtonState(false);
+                }
             }
-        }
-    })
-    .catch(error => {
-        console.error('检查进度失败:', error);
-    });
+        })
+        .catch(error => {
+            console.error('检查进度失败:', error);
+        });
 }
 
 // 添加任务进度状态（使用固定区域）
 function addTaskProgressStatus(message, status) {
     const taskArea = document.getElementById('taskProgressArea');
-    
+
     if (taskArea) {
         const loadingIndicator = status === 'loading' ? '<span class="report-loading-spinner"></span>' : '';
-        
+
         taskArea.innerHTML = `
             <div class="task-progress-container">
                 <div class="task-progress-header">
@@ -4400,12 +4410,12 @@ function addTaskProgressStatus(message, status) {
 // 更新任务进度状态（使用固定区域）
 function updateTaskProgressStatus(task, status = null, errorMessage = null) {
     const taskArea = document.getElementById('taskProgressArea');
-    
+
     if (!taskArea) {
         console.error('taskProgressArea not found');
         return;
     }
-    
+
     if (task) {
         taskArea.innerHTML = renderTaskStatus(task);
         if (task.status === 'completed') {
@@ -4805,73 +4815,73 @@ function formatStreamChunk(text) {
 function viewReport(taskId) {
     const reportPreview = document.getElementById('reportPreview');
     reportPreview.innerHTML = '<div class="report-loading"><span class="report-loading-spinner"></span>加载报告中...</div>';
-    
+
     fetch(`/api/report/result/${taskId}`)
-    .then(response => {
-        if (response.ok) {
-            return response.text();
-        } else {
-            throw new Error('报告加载失败');
-        }
-    })
-    .then(rawContent => {
-        let htmlContent = rawContent;
-        
-        // 检查是否是JSON格式的响应（包含html_content字段）
-        try {
-            if (rawContent.includes('"html_content":')) {
-                // 提取JSON中的html_content
-                const jsonMatch = rawContent.match(/\{[\s\S]*\}/);
-                if (jsonMatch) {
-                    const jsonData = JSON.parse(jsonMatch[0]);
-                    if (jsonData.html_content) {
-                        htmlContent = jsonData.html_content;
-                        // 处理转义字符
-                        htmlContent = htmlContent.replace(/\\"/g, '"').replace(/\\n/g, '\n');
+        .then(response => {
+            if (response.ok) {
+                return response.text();
+            } else {
+                throw new Error('报告加载失败');
+            }
+        })
+        .then(rawContent => {
+            let htmlContent = rawContent;
+
+            // 检查是否是JSON格式的响应（包含html_content字段）
+            try {
+                if (rawContent.includes('"html_content":')) {
+                    // 提取JSON中的html_content
+                    const jsonMatch = rawContent.match(/\{[\s\S]*\}/);
+                    if (jsonMatch) {
+                        const jsonData = JSON.parse(jsonMatch[0]);
+                        if (jsonData.html_content) {
+                            htmlContent = jsonData.html_content;
+                            // 处理转义字符
+                            htmlContent = htmlContent.replace(/\\"/g, '"').replace(/\\n/g, '\n');
+                        }
                     }
                 }
+            } catch (e) {
+                console.warn('解析JSON格式报告失败，使用原始内容:', e);
             }
-        } catch (e) {
-            console.warn('解析JSON格式报告失败，使用原始内容:', e);
-        }
-        
-        // 创建iframe来显示HTML内容
-        const iframe = document.createElement('iframe');
-        iframe.style.width = '100%';
-        iframe.style.border = 'none';
-        iframe.style.minHeight = '800px'; // 增加最小高度
-        iframe.style.overflow = 'hidden'; // 强制不显示滚动条
-        iframe.style.scrollbarWidth = 'none'; // Firefox
-        iframe.style.msOverflowStyle = 'none'; // IE and Edge
-        iframe.scrolling = 'no'; // 传统方式禁用滚动
-        iframe.id = 'report-iframe';
-        
-        reportPreview.innerHTML = '';
-        reportPreview.appendChild(iframe);
-        
-        // 将HTML内容写入iframe
-        iframe.contentDocument.open();
-        iframe.contentDocument.write(htmlContent);
-        iframe.contentDocument.close();
-        
-        // 确保iframe内部文档也不显示滚动条
-        const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
-        if (iframeDoc) {
-            // 设置body样式
-            if (iframeDoc.body) {
-                iframeDoc.body.style.overflow = 'hidden';
-                iframeDoc.body.style.scrollbarWidth = 'none';
-                iframeDoc.body.style.msOverflowStyle = 'none';
-            }
-            // 设置html样式
-            if (iframeDoc.documentElement) {
-                iframeDoc.documentElement.style.overflow = 'hidden';
-                iframeDoc.documentElement.style.scrollbarWidth = 'none';
-                iframeDoc.documentElement.style.msOverflowStyle = 'none';
-            }
-            // 添加CSS规则隐藏webkit滚动条
-            const style = iframeDoc.createElement('style');
-            style.textContent = `
+
+            // 创建iframe来显示HTML内容
+            const iframe = document.createElement('iframe');
+            iframe.style.width = '100%';
+            iframe.style.border = 'none';
+            iframe.style.minHeight = '800px'; // 增加最小高度
+            iframe.style.overflow = 'hidden'; // 强制不显示滚动条
+            iframe.style.scrollbarWidth = 'none'; // Firefox
+            iframe.style.msOverflowStyle = 'none'; // IE and Edge
+            iframe.scrolling = 'no'; // 传统方式禁用滚动
+            iframe.id = 'report-iframe';
+
+            reportPreview.innerHTML = '';
+            reportPreview.appendChild(iframe);
+
+            // 将HTML内容写入iframe
+            iframe.contentDocument.open();
+            iframe.contentDocument.write(htmlContent);
+            iframe.contentDocument.close();
+
+            // 确保iframe内部文档也不显示滚动条
+            const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+            if (iframeDoc) {
+                // 设置body样式
+                if (iframeDoc.body) {
+                    iframeDoc.body.style.overflow = 'hidden';
+                    iframeDoc.body.style.scrollbarWidth = 'none';
+                    iframeDoc.body.style.msOverflowStyle = 'none';
+                }
+                // 设置html样式
+                if (iframeDoc.documentElement) {
+                    iframeDoc.documentElement.style.overflow = 'hidden';
+                    iframeDoc.documentElement.style.scrollbarWidth = 'none';
+                    iframeDoc.documentElement.style.msOverflowStyle = 'none';
+                }
+                // 添加CSS规则隐藏webkit滚动条
+                const style = iframeDoc.createElement('style');
+                style.textContent = `
                 body::-webkit-scrollbar, html::-webkit-scrollbar {
                     display: none !important;
                 }
@@ -4881,75 +4891,75 @@ function viewReport(taskId) {
                     -ms-overflow-style: none !important;
                 }
             `;
-            iframeDoc.head.appendChild(style);
-        }
-        
-        // 等待内容加载完成后调整iframe高度
-        iframe.onload = function() {
+                iframeDoc.head.appendChild(style);
+            }
+
+            // 等待内容加载完成后调整iframe高度
+            iframe.onload = function () {
+                setTimeout(() => {
+                    try {
+                        // 获取iframe内容的实际高度
+                        const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+
+                        // 等待所有资源加载完成
+                        let contentHeight = 0;
+
+                        // 尝试多种方式获取内容高度
+                        if (iframeDoc.body) {
+                            contentHeight = Math.max(
+                                iframeDoc.body.scrollHeight || 0,
+                                iframeDoc.body.offsetHeight || 0,
+                                iframeDoc.body.clientHeight || 0
+                            );
+                        }
+
+                        if (iframeDoc.documentElement) {
+                            contentHeight = Math.max(
+                                contentHeight,
+                                iframeDoc.documentElement.scrollHeight || 0,
+                                iframeDoc.documentElement.offsetHeight || 0,
+                                iframeDoc.documentElement.clientHeight || 0
+                            );
+                        }
+
+                        // 设置iframe高度为内容高度，最小800px
+                        const finalHeight = Math.max(contentHeight + 100, 800); // 添加100px的缓冲
+                        iframe.style.height = finalHeight + 'px';
+
+                        console.log(`报告iframe高度已调整为: ${finalHeight}px (内容高度: ${contentHeight}px)`);
+
+                        // 确保父容器也能正确显示
+                        reportPreview.style.minHeight = finalHeight + 'px';
+
+                    } catch (error) {
+                        console.error('调整iframe高度失败:', error);
+                        // 如果调整失败，使用更大的默认高度
+                        iframe.style.height = '1200px';
+                        reportPreview.style.minHeight = '1200px';
+                    }
+                }, 1000); // 延迟1秒等待内容完全渲染
+            };
+
+            // 备用方案：如果onload没有触发，延迟调整高度
             setTimeout(() => {
-                try {
-                    // 获取iframe内容的实际高度
-                    const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
-                    
-                    // 等待所有资源加载完成
-                    let contentHeight = 0;
-                    
-                    // 尝试多种方式获取内容高度
-                    if (iframeDoc.body) {
-                        contentHeight = Math.max(
-                            iframeDoc.body.scrollHeight || 0,
-                            iframeDoc.body.offsetHeight || 0,
-                            iframeDoc.body.clientHeight || 0
-                        );
-                    }
-                    
-                    if (iframeDoc.documentElement) {
-                        contentHeight = Math.max(
-                            contentHeight,
-                            iframeDoc.documentElement.scrollHeight || 0,
-                            iframeDoc.documentElement.offsetHeight || 0,
-                            iframeDoc.documentElement.clientHeight || 0
-                        );
-                    }
-                    
-                    // 设置iframe高度为内容高度，最小800px
-                    const finalHeight = Math.max(contentHeight + 100, 800); // 添加100px的缓冲
-                    iframe.style.height = finalHeight + 'px';
-                    
-                    console.log(`报告iframe高度已调整为: ${finalHeight}px (内容高度: ${contentHeight}px)`);
-                    
-                    // 确保父容器也能正确显示
-                    reportPreview.style.minHeight = finalHeight + 'px';
-                    
-                } catch (error) {
-                    console.error('调整iframe高度失败:', error);
-                    // 如果调整失败，使用更大的默认高度
+                if (iframe.style.height === 'auto' || iframe.style.height === '') {
                     iframe.style.height = '1200px';
                     reportPreview.style.minHeight = '1200px';
+                    console.log('使用备用高度设置: 1200px');
                 }
-            }, 1000); // 延迟1秒等待内容完全渲染
-        };
-        
-        // 备用方案：如果onload没有触发，延迟调整高度
-        setTimeout(() => {
-            if (iframe.style.height === 'auto' || iframe.style.height === '') {
-                iframe.style.height = '1200px';
-                reportPreview.style.minHeight = '1200px';
-                console.log('使用备用高度设置: 1200px');
-            }
-        }, 3000);
+            }, 3000);
 
-        // 缓存报告内容
-        saveReportCache(taskId, htmlContent);
-    })
-    .catch(error => {
-        console.error('查看报告失败:', error);
-        reportPreview.innerHTML = `
+            // 缓存报告内容
+            saveReportCache(taskId, htmlContent);
+        })
+        .catch(error => {
+            console.error('查看报告失败:', error);
+            reportPreview.innerHTML = `
             <div class="report-loading">
                 报告加载失败: ${error.message}
             </div>
         `;
-    });
+        });
 }
 
 // 渲染缓存的报告
@@ -4972,7 +4982,7 @@ function renderCachedReport(htmlContent) {
     iframe.contentDocument.write(htmlContent);
     iframe.contentDocument.close();
 
-    iframe.onload = function() {
+    iframe.onload = function () {
         const iframeDoc = iframe.contentDocument;
         if (iframeDoc?.body) {
             iframe.style.height = Math.max(iframeDoc.body.scrollHeight, 1200) + 'px';
@@ -4984,43 +4994,43 @@ function renderCachedReport(htmlContent) {
 function checkReportStatus() {
     // 只更新状态信息，不重新渲染整个界面
     fetch('/api/report/status')
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            // 更新ReportEngine状态指示器
-            const indicator = document.getElementById('status-report');
-            if (indicator) {
-                if (data.initialized) {
-                    indicator.className = 'status-indicator running';
-                    appStatus.report = 'running';
-                } else {
-                    indicator.className = 'status-indicator';
-                    appStatus.report = 'stopped';
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // 更新ReportEngine状态指示器
+                const indicator = document.getElementById('status-report');
+                if (indicator) {
+                    if (data.initialized) {
+                        indicator.className = 'status-indicator running';
+                        appStatus.report = 'running';
+                    } else {
+                        indicator.className = 'status-indicator';
+                        appStatus.report = 'stopped';
+                    }
                 }
+
+                // 更新状态信息（如果存在）
+                updateEngineStatusDisplay(data);
+
+                showMessage('状态检查完成', 'success');
+            } else {
+                showMessage('状态检查失败: ' + data.error, 'error');
             }
-            
-            // 更新状态信息（如果存在）
-            updateEngineStatusDisplay(data);
-            
-            showMessage('状态检查完成', 'success');
-        } else {
-            showMessage('状态检查失败: ' + data.error, 'error');
-        }
-    })
-    .catch(error => {
-        console.error('检查报告状态失败:', error);
-        showMessage('状态检查失败: ' + error.message, 'error');
-    });
+        })
+        .catch(error => {
+            console.error('检查报告状态失败:', error);
+            showMessage('状态检查失败: ' + error.message, 'error');
+        });
 }
 
 // 更新引擎状态显示（只更新文本内容）
 function updateEngineStatusDisplay(statusData) {
     const statusContent = document.getElementById('engineStatusContent');
-    
+
     if (statusContent) {
         // 确定状态样式
         const statusClass = statusData.initialized ? 'success' : 'error';
-        
+
         // 更新状态信息内容
         let statusHTML = '';
         if (statusData.initialized) {
@@ -5028,13 +5038,13 @@ function updateEngineStatusDisplay(statusData) {
                 <strong>ReportEngine状态:</strong> 已初始化<br>
                 <strong>文件检查:</strong> ${statusData.engines_ready ? '准备就绪' : '文件未就绪'}<br>
                 <strong>找到文件:</strong> ${statusData.files_found ? statusData.files_found.join(', ') : '无'}<br>
-                ${statusData.missing_files && statusData.missing_files.length > 0 ? 
-                  `<strong>缺失文件:</strong> ${statusData.missing_files.join(', ')}` : ''}
+                ${statusData.missing_files && statusData.missing_files.length > 0 ?
+                    `<strong>缺失文件:</strong> ${statusData.missing_files.join(', ')}` : ''}
             `;
         } else {
             statusHTML = `<strong>ReportEngine状态:</strong> 未初始化`;
         }
-        
+
         // 更新内容和样式
         statusContent.innerHTML = statusHTML;
         statusContent.className = `report-status ${statusClass}`;
